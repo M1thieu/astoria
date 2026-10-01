@@ -1310,7 +1310,7 @@ async function refreshQuestStateFromBackend(options = {}) {
             }
         }
 
-        setSyncBadge(true, refreshHistory ? "Syncing quests and history..." : "Syncing quests...");
+        setSyncBadge(true, refreshHistory ? "Synchronisation des quêtes et de l'historique..." : "Synchronisation des quêtes...");
         const activeQuestId = state.activeQuestId;
         const detailOpen = dom.detailModal?.classList.contains("open");
         // Progressive loading is for initial page load only. Realtime/polling refreshes
@@ -4115,7 +4115,7 @@ function setupHistoryLazyLoad() {
 async function init() {
     await refreshSessionUser?.();
     await initCharacterSummary({ enableDropdown: true, showKaels: true });
-    setSyncBadge(true, "Loading latest data...");
+    setSyncBadge(true, "Chargement des dernières données...");
     if (SHOULD_REDUCE_QUEST_EFFECTS) {
         document.querySelector(".quest-page")?.classList.add("quest-perf-lite");
     }
@@ -4147,7 +4147,7 @@ async function init() {
 
     renderQuestList();
     renderHistory();
-    setSyncBadge(false, "Ready");
+    setSyncBadge(false, "Prêt");
     setupHistoryLazyLoad();
 
     scheduleDeferredTask(async () => {

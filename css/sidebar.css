@@ -252,7 +252,7 @@ body.sidebar-layout {
 .sidebar-layout .sidebarIconToggle {
   cursor: pointer;
   position: fixed;
-  z-index: 2147482500;
+  z-index: 190; /* see .headroom-hamburger in style.css */
   top: 12px;
   left: 12px;
   height: 32px;

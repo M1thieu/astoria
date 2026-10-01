@@ -1606,3 +1606,8 @@
         max-width: 120px;
     }
 }
+
+/* Login/logout controls sit at the top-left: keep them clear of the fixed menu button. */
+.auth-controls {
+    padding-left: 52px;
+}

@@ -580,6 +580,7 @@
 
     .hdv-sidebar {
         width: 100%;
+        box-sizing: border-box;
     }
 
     .hdv-category-list {
@@ -606,6 +607,44 @@
 
     .hdv-filterbar .inventory-search {
         max-width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    /* Filters: search and selects full width, level range side by side. */
+    .hdv-filterbar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: end;
+    }
+
+    .hdv-filterbar > * {
+        grid-column: 1 / -1;
+        min-width: 0;
+    }
+
+    .hdv-filterbar > .hdv-filter-group {
+        grid-column: auto;
+    }
+
+    .hdv-filterbar .hdv-filter-input,
+    .hdv-filterbar > select {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Stacked listing cards: price reads left-aligned like the other values. */
+    .hdv-td-price {
+        text-align: left;
+    }
+
+    .hdv-price-cell {
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .hdv-page td:last-child > * {
+        flex: 1 1 auto;
     }
 }
 

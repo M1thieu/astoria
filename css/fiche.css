@@ -779,9 +779,18 @@
 
     .fiche-sidebar {
         width: 100%;
+        box-sizing: border-box;
+        padding: var(--space-3);
         flex-direction: row;
         flex-wrap: wrap;
         justify-content: center;
+        gap: var(--space-2);
+    }
+
+    /* Section tabs become compact chips instead of a full-height column. */
+    .fiche-sidebar .tab-button {
+        width: auto;
+        flex: 0 0 auto;
     }
 
     .fiche-content {

@@ -176,7 +176,7 @@ body:not(.nokorah-theme)::before {
     z-index: 0;
 }
 
-body:not(.nokorah-theme) > *:not(.panel-backdrop):not(.panel-drawer):not(.modal):not(.craft-modal):not(.combat-modal-backdrop):not(.add-panel):not(.delete-modal-overlay):not(.select-modal-backdrop):not(.codex-admin-backdrop):not(.codex-cropper-backdrop):not(.codex-skills-picker-backdrop):not(.codex-skills-detail-backdrop):not(.codex-delete-backdrop):not(.profile-cropper-backdrop):not(.silhouette-cropper-backdrop):not(.profile-tags-dropdown):not(.quest-cropper-backdrop):not(.quest-modal):not(.panel-admin-modal):not(.app-dock) {
+body:not(.nokorah-theme) > *:not(.headroom-hamburger):not(.panel-backdrop):not(.panel-drawer):not(.modal):not(.craft-modal):not(.combat-modal-backdrop):not(.add-panel):not(.delete-modal-overlay):not(.select-modal-backdrop):not(.codex-admin-backdrop):not(.codex-cropper-backdrop):not(.codex-skills-picker-backdrop):not(.codex-skills-detail-backdrop):not(.codex-delete-backdrop):not(.profile-cropper-backdrop):not(.silhouette-cropper-backdrop):not(.profile-tags-dropdown):not(.quest-cropper-backdrop):not(.quest-modal):not(.panel-admin-modal):not(.app-dock) {
     position: relative;
     z-index: 1;
 }
@@ -1636,6 +1636,7 @@ tbody tr.keyboard-selected {
     td {
         display: block;
         width: 100%;
+        box-sizing: border-box;
     }
 
     tbody tr {
@@ -1668,6 +1669,17 @@ tbody tr.keyboard-selected {
         text-transform: uppercase;
         letter-spacing: var(--letter-spacing-wide);
         font-size: var(--text-xs);
+    }
+
+    /* Long values wrap instead of pushing the card wider than the screen. */
+    td > * {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    /* Cells without a column label (messages, empty states) use the full width. */
+    td:not([data-label])::before {
+        content: none;
     }
 
     .img-cell img {
@@ -3306,7 +3318,8 @@ button:hover .shortcut-icon {
     position: fixed !important;
     top: 12px;
     left: 12px;
-    z-index: 2147482500;
+    /* Above the floating character card (180) and sidebar (20), below dropdowns/modals (200+). */
+    z-index: 190;
     transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
     will-change: transform;
 }
@@ -3314,6 +3327,22 @@ button:hover .shortcut-icon {
 .headroom-hamburger.headroom--hidden {
     transform: translateY(-200%) !important;
     pointer-events: none;
+}
+
+@media (max-width: 767px) {
+    /* Floating character card: compact pill on the right, never over the menu button. */
+    .headroom-character {
+        left: auto !important;
+        width: auto !important;
+        min-width: 0;
+        max-width: calc(100vw - 72px) !important;
+        box-sizing: border-box;
+    }
+
+    /* Keep the page title below the floating card and menu button. */
+    .page-header:has(.headroom-character) {
+        padding-top: 84px;
+    }
 }
 
 /* =================================================================

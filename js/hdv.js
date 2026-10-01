@@ -5,6 +5,7 @@ import {
     getUserCharacters,
     setActiveCharacter,
     getAllItems,
+    getSupabaseClient,
     patchCharacterProfile
 } from './auth.js';
 import { SESSION_VERSION } from './api/session-store.js';

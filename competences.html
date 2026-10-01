@@ -1191,7 +1191,22 @@
                 padding: 14px;
             }
         }
-    
+
+        /* Touch screens: +/- buttons reach the site's minimum touch target. */
+        @media (pointer: coarse) {
+            .skill-point-btn {
+                width: var(--touch-target-min);
+                height: var(--touch-target-min);
+                font-size: var(--text-base);
+            }
+        }
+        @media (max-width: 480px) {
+            .skills-panel,
+            .character-summary {
+                box-sizing: border-box;
+                max-width: 100%;
+            }
+        }
         </style>
 </head>
 <body data-admin="false" class="min-h-screen">
