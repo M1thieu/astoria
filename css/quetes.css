@@ -11,7 +11,7 @@ body.quest-board {
     font-family: var(--quest-font-body);
     min-height: 100vh;
     background-color: #fff;
-    background-image: url("../assets/images/general_background.png");
+    background-image: url("../assets/images/general_background.jpg");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
