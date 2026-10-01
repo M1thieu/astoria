@@ -24,6 +24,7 @@ import { getCategories } from './api/categories-service.js';
 import { initCharacterSummary } from './ui/character-summary.js';
 import { logItemPurchase, logActivity, ActionTypes } from './api/activity-logger.js';
 import { getRouteHref } from './config/routes.js';
+import { setTableLoading, clearTableLoading, showTableError } from './ui/table-loading.js';
 
 const dom = {
     kaelsBadge: document.getElementById('characterKaelsBadge'),
@@ -1436,9 +1437,18 @@ function filterByVendor(characterId, name) {
     refreshSearch();
 }
 
+let searchRequestId = 0;
+
+function getSearchColumnCount() {
+    return dom.search.body.closest('table')?.tHead?.rows?.[0]?.cells?.length || 1;
+}
+
 async function refreshSearch() {
     renderChips();
+    // Only the latest search may render: an older, slower response is ignored.
+    const requestId = ++searchRequestId;
     setStatus(dom.search.status, 'Recherche...', 'info');
+    setTableLoading(dom.search.body, { columns: getSearchColumnCount() });
 
     const filters = {
         q: state.filters.q,
@@ -1452,15 +1462,22 @@ async function refreshSearch() {
 
     try {
         const result = await searchListings(filters, state.sort, state.page, state.pageSize);
+        if (requestId !== searchRequestId) return;
         const listings = Array.isArray(result.listings) ? result.listings : [];
+        clearTableLoading(dom.search.body);
         renderListings(listings);
         renderPagination(result.page, result.totalPages);
         setStatus(dom.search.status, `${result.totalCount} offres - page ${result.page}/${result.totalPages}`, 'info');
     } catch (err) {
+        if (requestId !== searchRequestId) return;
         console.error(err);
-        renderListings([]);
+        showTableError(dom.search.body, {
+            columns: getSearchColumnCount(),
+            message: "Impossible de charger les offres.",
+            onRetry: () => void refreshSearch()
+        });
         renderPagination(1, 1);
-        setStatus(dom.search.status, err?.message || 'Erreur lors du chargement des offres.', 'error');
+        setStatus(dom.search.status, '', 'info');
     }
 }
 

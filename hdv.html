@@ -56,7 +56,7 @@
             </aside>
             <section class="hdv-content">
                 <div class="hdv-panel active tw-surface tw-panel" id="hdvTabSearch" role="tabpanel" aria-label="Rechercher">
-                    <section class="hdv-filterbar" aria-label="Filtres">
+                    <section class="hdv-filterbar" aria-label="Filtres" data-mobile-filters="Filtres">
                         <div class="inventory-search" id="hdvSearch" data-search-priority="page">
                             <button type="button" class="inventory-search-toggle tw-press" id="hdvSearchToggle" aria-label="Rechercher" aria-expanded="false">
                                 <span class="inventory-search-icon">&#x1F50D;</span>
@@ -71,15 +71,15 @@
                             <button type="button" class="inventory-search-clear tw-press" id="hdvSearchClear" aria-label="Effacer la recherche" hidden>x</button>
                             <div class="recent-searches-dropdown inventory-search-history" id="hdvSearchHistory"></div>
                         </div>
-                        <div class="hdv-filter-group">
+                        <div class="hdv-filter-group" data-filter-item>
                             <label class="hdv-filter-label" for="hdvMinLevel">Niv. min</label>
                             <input class="field-input hdv-filter-input tw-input" id="hdvMinLevel" type="number" min="0" placeholder="0">
                         </div>
-                        <div class="hdv-filter-group">
+                        <div class="hdv-filter-group" data-filter-item>
                             <label class="hdv-filter-label" for="hdvMaxLevel">Niv. max</label>
                             <input class="field-input hdv-filter-input tw-input" id="hdvMaxLevel" type="number" min="0" placeholder="999">
                         </div>
-                        <select class="category-dropdown tw-input" id="hdvRaritySelect" aria-label="Rareté">
+                        <select class="category-dropdown tw-input" id="hdvRaritySelect" data-filter-item aria-label="Rareté">
                             <option value="all">Toutes raretés</option>
                             <option value="Inconnue">Inconnue</option>
                             <option value="Commun">Commun</option>
@@ -94,13 +94,13 @@
                                 <button class="hdv-scroll-clear tw-press" type="button" id="hdvScrollTypesClear">Tous les types</button>
                             </div>
                         </div>
-                        <select class="category-dropdown tw-input" id="hdvSortSelect" aria-label="Tri">
+                        <select class="category-dropdown tw-input" id="hdvSortSelect" data-filter-item aria-label="Tri">
                             <option value="price_asc">Les moins chers</option>
                             <option value="price_desc">Les plus chers</option>
                             <option value="level_desc">Niveau</option>
                             <option value="recent_desc">Récents</option>
                         </select>
-                        <label class="hdv-toggle" title="Nécessite d'être connecté">
+                        <label class="hdv-toggle" data-filter-item title="Nécessite d'être connecté">
                             <input id="hdvAffordableToggle" type="checkbox" disabled>
                             Je peux l'acheter
                         </label>
@@ -205,6 +205,7 @@
     <script type="module" src="js/hdv.js"></script>
     <script src="js/sidebar.js"></script>
     <script src="js/ui/headroom.js"></script>
+    <script type="module" src="js/ui/mobile-filters.js"></script>
     <script type="module" src="js/ui/table-labels.js"></script>
 </body>
 </html>

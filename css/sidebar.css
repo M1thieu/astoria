@@ -384,3 +384,12 @@ body.sidebar-layout {
   }
 }
 
+
+/* Touch screens: invisible hit area filling the 38px menu row (no overlap with neighbours). */
+@media (pointer: coarse) {
+  .sidebar-layout .menu-open::after {
+    content: "";
+    position: absolute;
+    inset: -9px -12px;
+  }
+}

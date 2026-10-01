@@ -3603,3 +3603,119 @@ body.modal-scroll-locked {
 body.modal-scroll-locked {
     touch-action: none;
 }
+
+/* =================================================================
+   MOBILE FILTERS (js/ui/mobile-filters.js)
+   ================================================================= */
+.mobile-filters-toggle {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .mobile-filters-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: var(--touch-target-min);
+        grid-column: 1 / -1;
+        padding: 0 var(--space-4);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-primary-light);
+        background: var(--color-white);
+        color: var(--color-primary-dark);
+        font-family: inherit;
+        font-weight: var(--font-semibold);
+        cursor: pointer;
+    }
+
+    .mobile-filters--open .mobile-filters-toggle {
+        background: var(--color-primary-lighter);
+    }
+
+    [data-mobile-filters]:not(.mobile-filters--open) [data-filter-item] {
+        display: none !important;
+    }
+}
+
+/* =================================================================
+   TOUCH TARGETS — touch screens only, desktop unchanged
+   ================================================================= */
+@media (pointer: coarse) {
+    .hdv-tab,
+    .hdv-category-btn,
+    .tab-button,
+    .save-tab-button,
+    .category-btn,
+    .auth-button,
+    .field-input,
+    .character-rank-select,
+    .relation-add-btn,
+    .combat-btn-primary,
+    .combat-btn-secondary {
+        min-height: var(--touch-target-min);
+    }
+
+    .hdv-action-btn,
+    .hdv-page-btn {
+        min-height: var(--touch-target-min);
+        min-width: var(--touch-target-min);
+    }
+
+    /* Seller name link: larger hit area without changing the text layout. */
+    .hdv-page .hdv-vendor-btn {
+        padding-block: 8px;
+        margin-block: -8px;
+    }
+
+    .theme-toggle {
+        min-height: 32px;
+    }
+}
+
+/* =================================================================
+   TABLE LOADING STATES (js/ui/table-loading.js)
+   ================================================================= */
+table[aria-busy="true"] tbody {
+    opacity: 0.55;
+    transition: opacity var(--transition-fast);
+    cursor: progress;
+}
+
+table[aria-busy="true"] tbody:has(.table-skeleton-row) {
+    opacity: 1;
+}
+
+.table-skeleton-bar {
+    display: block;
+    width: 70%;
+    height: 12px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(216, 27, 96, 0.08), rgba(216, 27, 96, 0.18), rgba(216, 27, 96, 0.08));
+    background-size: 200% 100%;
+    animation: table-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes table-skeleton-shimmer {
+    from { background-position: 100% 0; }
+    to { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .table-skeleton-bar {
+        animation: none;
+    }
+}
+
+.table-state-cell {
+    text-align: center;
+    padding: var(--space-5);
+}
+
+.table-state-cell--error {
+    color: var(--color-primary-dark);
+}
+
+.table-state-retry {
+    margin-left: var(--space-3);
+}
