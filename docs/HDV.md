@@ -3,7 +3,7 @@
 ## Prérequis
 
 - Un projet Supabase configuré dans `js/auth.js` (`SUPABASE_URL` + `SUPABASE_ANON_KEY`).
-- Exécuter le schéma `supabase-schema.sql` dans l’éditeur SQL Supabase (il contient les tables HDV + la RPC `buy_listing`).
+- Exécuter le schéma `supabase-schema.sql` dans l’éditeur SQL Supabase (tables HDV), puis `database/migrations/026_market_buy_listing_v2.sql` (RPC `buy_listing` : achat partiel, achat entre persos d'un même compte).
 
 ## Ouvrir la page
 
@@ -15,7 +15,7 @@
 1. Aller dans `hdv.html` → onglet **Mes offres**.
 2. Créer une offre : choisir un objet, quantité, prix/unité (pré-rempli avec le “flat” issu de `data.js` quand disponible).
 3. Onglet **Rechercher** : retrouver l’offre, tester le tri “les moins chers” + pagination.
-4. Cliquer **Acheter** : la RPC `buy_listing` debite/credite les kaels, marque l'offre `sold`, et met a jour `market` (buyer_id, buyer_character_id, sold_at).
+4. Cliquer **Acheter** : la RPC `buy_listing` debite/credite les kaels, marque l'offre `sold` (ou, en achat partiel, réduit le lot et crée une ligne `sold` pour la part achetée). Seul l'achat à soi-même avec le même personnage est refusé.
 5. Onglet **Historique** : verifier l'entree Achat/Vente.
 
 ## Kaels

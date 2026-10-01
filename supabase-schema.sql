@@ -351,6 +351,8 @@ CREATE POLICY "Public can update market"
     USING (true);
 
 -- Atomic purchase (RPC)
+-- Superseded by database/migrations/026_market_buy_listing_v2.sql (partial buys,
+-- same-account trading). Run that migration after this file.
 CREATE OR REPLACE FUNCTION buy_listing(p_listing_id UUID, p_buyer_id UUID, p_buyer_character_id UUID)
 RETURNS UUID
 LANGUAGE plpgsql
