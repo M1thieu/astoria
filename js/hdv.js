@@ -1437,18 +1437,35 @@ function filterByVendor(characterId, name) {
     refreshSearch();
 }
 
-let searchRequestId = 0;
+const tableRequestIds = new WeakMap();
 
-function getSearchColumnCount() {
-    return dom.search.body.closest('table')?.tHead?.rows?.[0]?.cells?.length || 1;
+function getTableColumnCount(body) {
+    return body?.closest('table')?.tHead?.rows?.[0]?.cells?.length || 1;
+}
+
+// Loads data into a table body: skeleton/dimmed rows while loading, an error
+// row with retry on failure, and only the latest request for a table renders.
+async function loadTable(body, { load, render, errorMessage, onRetry }) {
+    const requestId = (tableRequestIds.get(body) || 0) + 1;
+    tableRequestIds.set(body, requestId);
+    setTableLoading(body, { columns: getTableColumnCount(body) });
+    try {
+        const data = await load();
+        if (tableRequestIds.get(body) !== requestId) return { stale: true };
+        clearTableLoading(body);
+        render(data);
+        return { ok: true, data };
+    } catch (err) {
+        if (tableRequestIds.get(body) !== requestId) return { stale: true };
+        console.error(err);
+        showTableError(body, { columns: getTableColumnCount(body), message: errorMessage, onRetry });
+        return { ok: false };
+    }
 }
 
 async function refreshSearch() {
     renderChips();
-    // Only the latest search may render: an older, slower response is ignored.
-    const requestId = ++searchRequestId;
     setStatus(dom.search.status, 'Recherche...', 'info');
-    setTableLoading(dom.search.body, { columns: getSearchColumnCount() });
 
     const filters = {
         q: state.filters.q,
@@ -1460,22 +1477,18 @@ async function refreshSearch() {
         vendorCharacterId: state.filters.vendorCharacterId || null
     };
 
-    try {
-        const result = await searchListings(filters, state.sort, state.page, state.pageSize);
-        if (requestId !== searchRequestId) return;
-        const listings = Array.isArray(result.listings) ? result.listings : [];
-        clearTableLoading(dom.search.body);
-        renderListings(listings);
-        renderPagination(result.page, result.totalPages);
-        setStatus(dom.search.status, `${result.totalCount} offres - page ${result.page}/${result.totalPages}`, 'info');
-    } catch (err) {
-        if (requestId !== searchRequestId) return;
-        console.error(err);
-        showTableError(dom.search.body, {
-            columns: getSearchColumnCount(),
-            message: "Impossible de charger les offres.",
-            onRetry: () => void refreshSearch()
-        });
+    const result = await loadTable(dom.search.body, {
+        load: () => searchListings(filters, state.sort, state.page, state.pageSize),
+        render: (data) => {
+            renderListings(Array.isArray(data.listings) ? data.listings : []);
+            renderPagination(data.page, data.totalPages);
+        },
+        errorMessage: 'Impossible de charger les offres.',
+        onRetry: () => void refreshSearch()
+    });
+    if (result.ok) {
+        setStatus(dom.search.status, `${result.data.totalCount} offres - page ${result.data.page}/${result.data.totalPages}`, 'info');
+    } else if (!result.stale) {
         renderPagination(1, 1);
         setStatus(dom.search.status, '', 'info');
     }
@@ -1765,15 +1778,13 @@ async function refreshMine() {
     dom.mine.create.disabled = false;
     setStatus(dom.mine.status, '', 'info');
 
-    try {
-        const listings = await getMyListings();
-        renderMyListings(listings);
-        setStatus(dom.mine.status, `${listings.length} offres actives.`, 'info');
-    } catch (err) {
-        console.error(err);
-        renderMyListings([]);
-        setStatus(dom.mine.status, err?.message || 'Erreur lors du chargement.', 'error');
-    }
+    const result = await loadTable(dom.mine.body, {
+        load: () => getMyListings(),
+        render: renderMyListings,
+        errorMessage: 'Impossible de charger vos offres.',
+        onRetry: () => void refreshMine()
+    });
+    if (result.ok) setStatus(dom.mine.status, `${result.data.length} offres actives.`, 'info');
 }
 
 function renderHistory(transactions) {
@@ -1852,15 +1863,13 @@ async function refreshHistory() {
     }
 
     setStatus(dom.history.status, '', 'info');
-    try {
-        const transactions = await getMyHistory();
-        renderHistory(transactions);
-        setStatus(dom.history.status, `${transactions.length} transactions.`, 'info');
-    } catch (err) {
-        console.error(err);
-        renderHistory([]);
-        setStatus(dom.history.status, err?.message || 'Erreur lors du chargement.', 'error');
-    }
+    const result = await loadTable(dom.history.body, {
+        load: () => getMyHistory(),
+        render: renderHistory,
+        errorMessage: "Impossible de charger l'historique.",
+        onRetry: () => void refreshHistory()
+    });
+    if (result.ok) setStatus(dom.history.status, `${result.data.length} transactions.`, 'info');
 }
 
 function wireEvents() {
