@@ -49,16 +49,35 @@ async function readPublicUserByAuthId(supabase, authUserId) {
     return { user: Array.isArray(data) && data.length ? data[0] : null, error: null };
 }
 
+// Concurrent callers share one anonymous sign-in: each signInAnonymously()
+// creates a new Supabase auth user (counted in usage), so parallel calls on
+// page load must not each create their own.
+let anonSignInPromise = null;
+
 async function ensureAnonAuthSession(supabase) {
     const current = await supabase.auth.getSession();
     const sessionUser = current?.data?.session?.user || null;
     if (sessionUser) return { user: sessionUser, created: false };
 
-    const signed = await supabase.auth.signInAnonymously();
+    if (!anonSignInPromise) {
+        anonSignInPromise = supabase.auth.signInAnonymously().finally(() => {
+            anonSignInPromise = null;
+        });
+    }
+    const signed = await anonSignInPromise;
     if (signed.error || !signed.data?.user) {
         return { user: null, error: signed.error || new Error("anonymous-auth-failed") };
     }
     return { user: signed.data.user, created: true };
+}
+
+async function hasAuthSession(supabase) {
+    try {
+        const current = await supabase.auth.getSession();
+        return Boolean(current?.data?.session?.user);
+    } catch {
+        return false;
+    }
 }
 
 async function getWritableAuthSession(supabase) {
@@ -290,14 +309,21 @@ export function isAdmin() {
 export async function refreshSessionUser() {
     try {
         const supabase = await getSupabaseClient();
+        const localSession = readSession();
+        const localUser = localSession?.user || null;
+
+        // Logged-out visitor with no auth session: a brand-new anonymous user
+        // could not map to any account (result would be the same "not logged
+        // in"), so don't create one.
+        if (!localUser?.id && !(await hasAuthSession(supabase))) {
+            return { success: false };
+        }
+
         const anon = await ensureAnonAuthSession(supabase);
         if (anon.error || !anon.user?.id) {
             clearSession();
             return { success: false };
         }
-
-        const localSession = readSession();
-        const localUser = localSession?.user || null;
 
         // Priority 1: keep logged app user and relink auth uid.
         if (localUser?.id) {

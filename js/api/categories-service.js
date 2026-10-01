@@ -11,6 +11,24 @@ const FALLBACK_CATEGORIES = [
 let _categoriesCache = null;
 let _categoriesCacheExpiry = 0;
 
+// The categories table may not exist (fallback list is used then). Remember it
+// for the browser session so every page view doesn't repeat a failing request.
+const MISSING_TABLE_FLAG = 'astoria_categories_table_missing';
+
+function isTableKnownMissing() {
+    try {
+        return sessionStorage.getItem(MISSING_TABLE_FLAG) === '1';
+    } catch {
+        return false;
+    }
+}
+
+function rememberTableMissing() {
+    try {
+        sessionStorage.setItem(MISSING_TABLE_FLAG, '1');
+    } catch {}
+}
+
 function isMissingCategoriesTable(error) {
     const code = String(error?.code || '').trim();
     const message = String(error?.message || '').toLowerCase();
@@ -30,6 +48,9 @@ export async function getCategories() {
     if (_categoriesCache && Date.now() < _categoriesCacheExpiry) {
         return _categoriesCache;
     }
+    if (isTableKnownMissing()) {
+        return FALLBACK_CATEGORIES;
+    }
 
     const supabase = await getSupabaseClient();
     const { data, error } = await supabase
@@ -40,6 +61,7 @@ export async function getCategories() {
 
     if (error) {
         if (isMissingCategoriesTable(error)) {
+            rememberTableMissing();
             return FALLBACK_CATEGORIES;
         }
         throw error;
