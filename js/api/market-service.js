@@ -206,28 +206,18 @@ export async function updateListingPrice(listingId, unitPrice) {
 
     const safeUnitPrice = Math.max(0, asInt(unitPrice) ?? 0);
 
-    const { data: listing, error: fetchError } = await supabase
-        .from('market')
-        .select('quantity')
-        .eq('id', listingId)
-        .eq('seller_id', user.id)
-        .eq('status', 'active')
-        .single();
-
-    if (fetchError || !listing) throw new Error('Annonce introuvable.');
-
-    const totalPrice = safeUnitPrice * listing.quantity;
-
+    // total_price is a generated column (quantity * unit_price): never write it.
     const { data, error } = await supabase
         .from('market')
-        .update({ unit_price: safeUnitPrice, total_price: totalPrice })
+        .update({ unit_price: safeUnitPrice })
         .eq('id', listingId)
         .eq('seller_id', user.id)
         .eq('status', 'active')
         .select('*')
-        .single();
+        .maybeSingle();
 
     if (error) throw error;
+    if (!data) throw new Error('Annonce introuvable.');
     return data;
 }
 

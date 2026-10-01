@@ -1228,27 +1228,20 @@
         return { ...items[index], sourceIndex: index };
     }
 
-    function getScrollItemKey(item) {
-        if (!item) return "unknown";
-        const sourceIndex = Number(item?.sourceIndex);
-        if (Number.isFinite(sourceIndex)) {
-            return `idx:${sourceIndex}`;
+    function getScrollCostErrorMessage(result) {
+        if (result?.reason === "insufficient") {
+            return `Parchemins d'ascension insuffisants (${Number(result.current) || 0} de cette affinité).`;
         }
-        const name = item?.name ? normalizeText(item.name) : "";
-        if (name) return `name:${name}`;
-        const id = Number(item?.id);
-        if (Number.isFinite(id)) return `id:${id}`;
-        return "unknown";
+        if (result?.reason === "save-failed") {
+            return "Sauvegarde impossible, réessaie dans un instant.";
+        }
+        return "Parchemins d'ascension insuffisants.";
     }
 
     function getScrollCounts(profileData, category) {
         const baseItem = getScrollBaseItem(category);
         if (!baseItem) return {};
-        const key = getScrollItemKey(baseItem);
-        const scrollTypes = profileData?.inventory?.scrollTypes || {};
-        const bucket = scrollTypes[category] || {};
-        const entry = bucket[key];
-        return entry?.counts && typeof entry.counts === "object" ? { ...entry.counts } : {};
+        return window.astoriaScrollStore?.getCounts(profileData?.inventory?.scrollTypes, category, baseItem) || {};
     }
 
     function sumScrollCounts(counts) {
@@ -1532,40 +1525,24 @@
         const baseItem = getScrollBaseItem(category);
         if (!baseItem) return { ok: false, reason: "missing-scroll-item" };
 
-        const hydratedCharacter = await getHydratedCharacter(currentCharacter.id, { logContext: "applyScrollCost" });
-        const profileData = { ...((hydratedCharacter?.profile_data) || currentCharacter.profile_data || {}) };
-        const inventory = { ...(profileData.inventory || {}) };
-        const scrollTypes = { ...(inventory.scrollTypes || {}) };
-        const bucket = { ...(scrollTypes[category] || {}) };
-        const itemKey = getScrollItemKey(baseItem);
-        const entry = bucket[itemKey] || {};
-        const counts = { ...(entry.counts || {}) };
-        const current = Number(counts[affinityKey]) || 0;
-        if (current < cost) {
-            return { ok: false, reason: "insufficient", current };
+        const store = window.astoriaScrollStore;
+        if (!store || !authApi?.patchCharacterProfile) return { ok: false, reason: "missing-data" };
+        let current = 0;
+        const result = await authApi.patchCharacterProfile(currentCharacter.id, (profileData) => {
+            const inventory = { ...(profileData.inventory || {}) };
+            const counts = store.getCounts(inventory.scrollTypes, category, baseItem) || {};
+            current = Number(counts[affinityKey]) || 0;
+            if (current < cost) return null;
+            counts[affinityKey] = current - cost;
+            inventory.scrollTypes = store.setCounts(inventory.scrollTypes, category, baseItem, counts);
+            return { ...profileData, inventory };
+        });
+        if (!result.success) {
+            return result.aborted
+                ? { ok: false, reason: "insufficient", current }
+                : { ok: false, reason: "save-failed" };
         }
-        const next = Math.max(0, current - cost);
-        if (next > 0) {
-            counts[affinityKey] = next;
-        } else {
-            delete counts[affinityKey];
-        }
-        if (Object.keys(counts).length) {
-            bucket[itemKey] = { counts, updatedAt: Date.now() };
-        } else {
-            delete bucket[itemKey];
-        }
-        if (Object.keys(bucket).length) {
-            scrollTypes[category] = bucket;
-        } else {
-            delete scrollTypes[category];
-        }
-        inventory.scrollTypes = scrollTypes;
-        profileData.inventory = inventory;
-
-        if (authApi?.updateCharacter) {
-            await authApi.updateCharacter(currentCharacter.id, { profile_data: profileData }).catch(() => {});
-        }
+        const profileData = result.profileData;
         currentCharacter = { ...currentCharacter, profile_data: profileData };
         persistActiveCharacterSnapshot(currentCharacter);
 
@@ -1634,7 +1611,7 @@
         }
         const result = await applyScrollCost({ category: "ascension", affinityKey, cost });
         if (!result.ok) {
-            window.toastManager?.error("Parchemins d'ascension insuffisants.");
+            window.toastManager?.error(getScrollCostErrorMessage(result));
             return false;
         }
         entry.ascensionLevel = nextLevel;
@@ -1849,7 +1826,7 @@
         const cost = getUltimeAscensionCost(nextLevel || 1);
         const result = await applyScrollCost({ category: "ascension", affinityKey, cost });
         if (!result.ok) {
-            window.toastManager?.error("Parchemins d'ascension insuffisants.");
+            window.toastManager?.error(getScrollCostErrorMessage(result));
             return false;
         }
         return true;

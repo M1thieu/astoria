@@ -11,9 +11,11 @@
 
 const THRESHOLD = 10;
 const TOLERANCE = 2;
+const FOCUS_TOP_BUFFER = 120;
 const CHARACTER_SELECTOR = '.page-header .character-summary';
 const HAMBURGER_SELECTOR = '.sidebarIconToggle';
 const MODAL_SELECTOR = '[role="dialog"], [aria-modal="true"]';
+const SEARCH_CONTAINER_SELECTOR = '.inventory-search, [data-search-priority]';
 
 let _removeListener = null;
 
@@ -40,6 +42,18 @@ function applyHiddenState(characters, hamburgers, hidden) {
     hamburgers.forEach((el) => el.classList.toggle('headroom--hidden', hidden));
 }
 
+function hasSearchFocus() {
+    const active = document.activeElement;
+    if (!active || typeof active.closest !== 'function') return false;
+    if (active.isContentEditable) {
+        return Boolean(active.closest(SEARCH_CONTAINER_SELECTOR));
+    }
+
+    const tag = active.tagName ? active.tagName.toLowerCase() : '';
+    if (!['input', 'textarea', 'select'].includes(tag)) return false;
+    return Boolean(active.closest(SEARCH_CONTAINER_SELECTOR));
+}
+
 export function initScrollUI() {
     if (_removeListener) {
         _removeListener();
@@ -58,8 +72,11 @@ export function initScrollUI() {
     function syncVisibility({ force = false } = {}) {
         const y = window.scrollY;
         const delta = y - lastY;
+        const searchFocusActive = hasSearchFocus();
 
-        if (y < THRESHOLD) {
+        if (searchFocusActive && y < FOCUS_TOP_BUFFER) {
+            hidden = false;
+        } else if (y < THRESHOLD) {
             hidden = false;
         } else if (force) {
             hidden = true;
@@ -84,11 +101,19 @@ export function initScrollUI() {
         syncVisibility({ force: true });
     }
 
+    function onFocusChange() {
+        requestAnimationFrame(() => syncVisibility());
+    }
+
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('pageshow', onPageShow);
+    document.addEventListener('focusin', onFocusChange);
+    document.addEventListener('focusout', onFocusChange);
     _removeListener = () => {
         window.removeEventListener('scroll', onScroll);
         window.removeEventListener('pageshow', onPageShow);
+        document.removeEventListener('focusin', onFocusChange);
+        document.removeEventListener('focusout', onFocusChange);
     };
 }
 

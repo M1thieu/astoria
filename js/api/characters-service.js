@@ -112,6 +112,74 @@ function isPermissionLikeError(error) {
     return code === '403' || code === '42501' || msg.includes('forbidden') || msg.includes('permission');
 }
 
+const FICHE_LOCKED_TABS = [
+    'identite',
+    'appartenance',
+    'combat',
+    'alice',
+    'sorcellerie',
+    'eater',
+    'religion',
+    'mental',
+    'physique',
+    'background'
+];
+
+function normalizeFicheLocks(rawLocks) {
+    const locks = {};
+    FICHE_LOCKED_TABS.forEach((tabName) => {
+        locks[tabName] = Boolean(rawLocks?.[tabName]);
+    });
+    return locks;
+}
+
+function sanitizePlayerCharacterUpdates(currentCharacter, updates) {
+    if (!currentCharacter || !updates || typeof updates !== 'object') {
+        return updates;
+    }
+
+    const currentProfile = currentCharacter.profile_data && typeof currentCharacter.profile_data === 'object'
+        ? currentCharacter.profile_data
+        : {};
+    const currentLocks = normalizeFicheLocks(currentProfile.fiche_locks);
+    const nextUpdates = { ...updates };
+
+    if (nextUpdates.profile_data && typeof nextUpdates.profile_data === 'object') {
+        const nextProfile = { ...nextUpdates.profile_data };
+        const requestedLocks = normalizeFicheLocks(nextProfile.fiche_locks);
+        const mergedLocks = { ...currentLocks };
+
+        FICHE_LOCKED_TABS.forEach((tabName) => {
+            if (requestedLocks[tabName]) {
+                mergedLocks[tabName] = true;
+            }
+            if (currentLocks[tabName] && tabName in nextProfile) {
+                delete nextProfile[tabName];
+            }
+        });
+
+        nextProfile.fiche_locks = mergedLocks;
+        nextUpdates.profile_data = nextProfile;
+    }
+
+    if (currentLocks.identite) {
+        if ('name' in nextUpdates && nextUpdates.name !== currentCharacter.name) {
+            delete nextUpdates.name;
+        }
+        if ('race' in nextUpdates && nextUpdates.race !== currentCharacter.race) {
+            delete nextUpdates.race;
+        }
+    }
+
+    if (currentLocks.appartenance) {
+        if ('class' in nextUpdates && nextUpdates.class !== currentCharacter.class) {
+            delete nextUpdates.class;
+        }
+    }
+
+    return nextUpdates;
+}
+
 export async function getUserCharacters(userId, options = {}) {
     if (!userId) return [];
     const includeProfileData = options?.includeProfileData === true;
@@ -324,17 +392,66 @@ export async function updateCharacter(characterId, updates) {
     try {
         await ensureAuthContext();
         const supabase = await getSupabaseClient();
+        let safeUpdates = updates;
+        let currentCharacter = null;
+
+        const touchesLockableFields = Boolean(updates) && typeof updates === 'object'
+            && ['profile_data', 'name', 'race', 'class'].some((key) => key in updates);
+
+        if (!isAdmin() && touchesLockableFields) {
+            const currentResult = await supabase
+                .from('characters')
+                .select(CHARACTER_FULL_COLUMNS)
+                .eq('id', characterId)
+                .single();
+
+            if (!currentResult.error && currentResult.data) {
+                currentCharacter = currentResult.data;
+                safeUpdates = sanitizePlayerCharacterUpdates(currentCharacter, updates);
+            }
+        }
+
+        // profile_data is shared by every page; callers often send a cached (possibly
+        // stale or session-stripped) copy. Merge their top-level keys onto the row
+        // as stored now, so keys missing from the cached copy are never wiped.
+        if (safeUpdates?.profile_data && typeof safeUpdates.profile_data === 'object') {
+            let storedProfile = currentCharacter ? (currentCharacter.profile_data || {}) : null;
+            if (!storedProfile) {
+                const { data: stored, error: storedError } = await supabase
+                    .from('characters')
+                    .select('profile_data')
+                    .eq('id', characterId)
+                    .single();
+                if (storedError || !stored) {
+                    console.error('updateCharacter: current profile unavailable, update aborted:', storedError);
+                    return { success: false };
+                }
+                storedProfile = stored.profile_data || {};
+            }
+            safeUpdates = {
+                ...safeUpdates,
+                profile_data: { ...storedProfile, ...safeUpdates.profile_data }
+            };
+        }
+
+        if (!safeUpdates || typeof safeUpdates !== 'object' || Object.keys(safeUpdates).length === 0) {
+            const activeChar = getActiveCharacter();
+            if (currentCharacter && activeChar && activeChar.id === characterId) {
+                setActiveCharacterLocal(currentCharacter);
+            }
+            return { success: true, character: currentCharacter || getActiveCharacter() || null };
+        }
 
         let { data, error } = await supabase
             .from('characters')
-            .update(updates)
+            .update(safeUpdates)
             .eq('id', characterId)
             .select();
 
         if (error && isPermissionLikeError(error)) {
             const fallback = await supabase
                 .from('characters')
-                .update(updates)
+                .update(safeUpdates)
                 .eq('id', characterId);
 
             if (!fallback.error) {
@@ -344,9 +461,9 @@ export async function updateCharacter(characterId, updates) {
                 const mergedCharacter = activeChar && activeChar.id === characterId
                     ? {
                         ...activeChar,
-                        ...updates,
-                        ...(updates.profile_data != null ? {
-                            profile_data: { ...(activeChar.profile_data || {}), ...updates.profile_data }
+                        ...safeUpdates,
+                        ...(safeUpdates.profile_data != null ? {
+                            profile_data: { ...(activeChar.profile_data || {}), ...safeUpdates.profile_data }
                         } : {})
                     }
                     : null;

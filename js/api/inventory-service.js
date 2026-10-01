@@ -12,23 +12,72 @@ export async function getInventoryRows(characterId) {
     return data || [];
 }
 
+function normalizeInventoryKey(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '')
+        .toLowerCase();
+}
+
+// Makes character_inventory match `rows` with a diff instead of delete-all +
+// insert: a failure part-way can no longer leave the character with an empty
+// inventory, and unchanged rows are not rewritten.
 export async function replaceInventoryRows(characterId, rows) {
     const supabase = await getSupabaseClient();
-    const { error: deleteError } = await supabase
+    const desired = Array.isArray(rows) ? rows : [];
+
+    const { data: existing, error: readError } = await supabase
         .from('character_inventory')
-        .delete()
+        .select('id, item_id, item_key, item_index, qty')
         .eq('character_id', characterId);
+    if (readError) throw readError;
 
-    if (deleteError) throw deleteError;
-    if (!rows || rows.length === 0) return [];
+    const unmatched = new Map((existing || []).map((row) => [row.id, row]));
+    const findMatch = (row) => {
+        for (const candidate of unmatched.values()) {
+            if (row.item_id && candidate.item_id === row.item_id) return candidate;
+        }
+        const key = normalizeInventoryKey(row.item_key);
+        for (const candidate of unmatched.values()) {
+            if (key && normalizeInventoryKey(candidate.item_key) === key) return candidate;
+        }
+        return null;
+    };
 
-    const { data, error } = await supabase
-        .from('character_inventory')
-        .insert(rows)
-        .select('id, item_id, item_key, item_index, qty');
+    const updates = [];
+    const inserts = [];
+    desired.forEach((row) => {
+        const match = findMatch(row);
+        if (!match) {
+            inserts.push(row);
+            return;
+        }
+        unmatched.delete(match.id);
+        const changed = match.qty !== row.qty
+            || match.item_key !== row.item_key
+            || (match.item_index ?? null) !== (row.item_index ?? null)
+            || (row.item_id && match.item_id !== row.item_id);
+        if (changed) {
+            updates.push({ ...row, id: match.id, item_id: row.item_id || match.item_id || null });
+        }
+    });
 
-    if (error) throw error;
-    return data || [];
+    // Delete first so updated keys cannot collide with leftover duplicates.
+    const staleIds = Array.from(unmatched.keys());
+    if (staleIds.length) {
+        const { error } = await supabase.from('character_inventory').delete().in('id', staleIds);
+        if (error) throw error;
+    }
+    if (updates.length) {
+        const { error } = await supabase.from('character_inventory').upsert(updates, { onConflict: 'id' });
+        if (error) throw error;
+    }
+    if (inserts.length) {
+        const { error } = await supabase.from('character_inventory').insert(inserts);
+        if (error) throw error;
+    }
+    return desired;
 }
 
 export async function upsertInventoryRows(rows) {

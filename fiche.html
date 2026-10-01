@@ -676,6 +676,7 @@
         </section>
     </main>
     <script src="js/data.js"></script>
+    <script src="js/scroll-store.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.js"></script>
     <script src="js/components/toast-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@floating-ui/core@1.6.0"></script>
@@ -694,7 +695,10 @@
             const CHARACTER_STORAGE_KEY = 'astoria_active_character';
             const LEGACY_SUMMARY_KEY = 'astoria_character_summary';
             const STORAGE_PREFIX = 'fiche';
+            const FICHE_LOCKS_STORAGE_PREFIX = 'fiche-locks';
+            const allTabs = ['identite', 'appartenance', 'combat', 'alice', 'sorcellerie', 'eater', 'religion', 'mental', 'physique', 'background'];
             let currentCharacterKey = 'default';
+            let currentFicheLocks = {};
             let summaryModule = null;
             let summaryElements = null;
             const relationsContainer = document.getElementById('backgroundRelations');
@@ -1049,7 +1053,14 @@
                         }
                         const safeProfile = freshProfile || profileData;
                         const updates = {
-                            profile_data: { ...safeProfile, fiche_summary: summary }
+                            profile_data: {
+                                ...safeProfile,
+                                fiche_summary: summary,
+                                fiche_locks: {
+                                    ...(safeProfile.fiche_locks || {}),
+                                    ...currentFicheLocks
+                                }
+                            }
                         };
                         if (name) updates.name = name;
                         if (race) updates.race = race;
@@ -1200,6 +1211,141 @@
             }
             function getLegacyTabStorageKey(tabName) {
                 return `${STORAGE_PREFIX}-${tabName}`;
+            }
+            function isAdminMode() {
+                return Boolean(authApi?.isAdmin?.());
+            }
+            function getFicheLocksStorageKey() {
+                return `${FICHE_LOCKS_STORAGE_PREFIX}-${currentCharacterKey}`;
+            }
+            function normalizeFicheLocks(rawLocks) {
+                const locks = {};
+                allTabs.forEach((tabName) => {
+                    locks[tabName] = Boolean(rawLocks?.[tabName]);
+                });
+                return locks;
+            }
+            function readFicheLocksFromStorage() {
+                try {
+                    const raw = localStorage.getItem(getFicheLocksStorageKey());
+                    return raw ? normalizeFicheLocks(JSON.parse(raw)) : normalizeFicheLocks({});
+                } catch {
+                    return normalizeFicheLocks({});
+                }
+            }
+            function readFicheLocksFromProfile() {
+                const character = authApi?.getActiveCharacter?.();
+                return normalizeFicheLocks(character?.profile_data?.fiche_locks || {});
+            }
+            function persistFicheLocksToStorage() {
+                try {
+                    localStorage.setItem(getFicheLocksStorageKey(), JSON.stringify(currentFicheLocks));
+                } catch {}
+            }
+            function loadFicheLocks() {
+                const localLocks = readFicheLocksFromStorage();
+                const profileLocks = readFicheLocksFromProfile();
+                currentFicheLocks = normalizeFicheLocks(
+                    allTabs.reduce((acc, tabName) => {
+                        acc[tabName] = Boolean(localLocks[tabName] || profileLocks[tabName]);
+                        return acc;
+                    }, {})
+                );
+                persistFicheLocksToStorage();
+            }
+            function isPlayerTabLocked(tabName) {
+                return !isAdminMode() && Boolean(currentFicheLocks?.[tabName]);
+            }
+            function hasMeaningfulValue(key, value) {
+                if (key && String(key).endsWith('File')) return false;
+                if (value === null || value === undefined) return false;
+                if (typeof value === 'boolean') return value;
+                if (Array.isArray(value)) return value.some((entry) => hasMeaningfulValue(key, entry));
+                if (typeof value === 'object') {
+                    return Object.entries(value).some(([childKey, childValue]) => hasMeaningfulValue(childKey, childValue));
+                }
+                return String(value).trim() !== '';
+            }
+            function hasMeaningfulTabData(data) {
+                return Object.entries(data || {}).some(([key, value]) => hasMeaningfulValue(key, value));
+            }
+            function updateSaveButtonLockState(tabName) {
+                const saveBtn = document.querySelector(`.save-tab-button[data-tab="${tabName}"]`);
+                if (!saveBtn) return;
+                const locked = isPlayerTabLocked(tabName);
+                saveBtn.classList.toggle('save-tab-button--locked', locked);
+                saveBtn.classList.remove('save-button--highlight');
+                saveBtn.disabled = locked;
+                saveBtn.textContent = locked ? 'Verrouille' : 'Sauvegarder';
+                saveBtn.title = locked ? 'Ce volet est verrouille pour le joueur. Un admin peut encore le modifier.' : '';
+            }
+            function applyTabLockState(tabName) {
+                const panel = document.getElementById('tab-' + tabName);
+                if (!panel) return;
+                const locked = isPlayerTabLocked(tabName);
+                panel.classList.toggle('tab-panel--locked', locked);
+                panel.setAttribute('aria-readonly', locked ? 'true' : 'false');
+                panel.querySelectorAll('input, select, textarea, button').forEach((element) => {
+                    if (element.classList.contains('save-tab-button')) return;
+                    if (element.matches('input[type="text"], input[type="url"], input[type="number"], textarea')) {
+                        element.readOnly = locked;
+                    } else if ('disabled' in element) {
+                        element.disabled = locked;
+                    }
+                });
+                panel.querySelectorAll('.relation-link-btn').forEach((link) => {
+                    link.classList.toggle('relation-link-btn--readonly', locked);
+                });
+                updateSaveButtonLockState(tabName);
+            }
+            function applyAllTabLockStates() {
+                allTabs.forEach(applyTabLockState);
+            }
+            async function syncFicheLocksToProfile() {
+                if (isAdminMode()) return;
+                const character = authApi?.getActiveCharacter?.();
+                if (!character?.id || !authApi?.updateCharacter) return;
+
+                let freshProfile = null;
+                const cached = window.astoriaActiveCharacter;
+                if (cached?.id === character.id && cached.profile_data) {
+                    freshProfile = cached.profile_data;
+                } else {
+                    try {
+                        const fresh = await authApi.getCharacterById?.(character.id);
+                        if (fresh?.profile_data) {
+                            freshProfile = fresh.profile_data;
+                            try { window.astoriaActiveCharacter = fresh; } catch {}
+                        }
+                    } catch (error) {
+                        console.warn('[Fiche] fetch fresh profile for locks failed:', error);
+                    }
+                }
+
+                const profileData = freshProfile || character.profile_data || {};
+                const nextProfileData = {
+                    ...profileData,
+                    fiche_locks: {
+                        ...(profileData.fiche_locks || {}),
+                        ...currentFicheLocks
+                    }
+                };
+
+                try {
+                    await authApi.updateCharacter(character.id, { profile_data: nextProfileData });
+                } catch (error) {
+                    console.warn('[Fiche] failed to sync fiche locks:', error);
+                }
+            }
+            function finalizePlayerTabLock(tabName, data) {
+                if (isAdminMode() || isPlayerTabLocked(tabName) || !hasMeaningfulTabData(data)) return;
+                currentFicheLocks[tabName] = true;
+                persistFicheLocksToStorage();
+                applyTabLockState(tabName);
+                void syncFicheLocksToProfile();
+                if (window.toastManager?.info) {
+                    window.toastManager.info(`Le volet ${tabName} est maintenant verrouille pour le joueur.`);
+                }
             }
             function clearAllDirty() {
                 dirtyTabs.clear();
@@ -1513,27 +1659,10 @@
                 return { ...items[index], sourceIndex: index };
             }
 
-            function getScrollItemKey(item) {
-                if (!item) return 'unknown';
-                const sourceIndex = Number(item?.sourceIndex);
-                if (Number.isFinite(sourceIndex)) {
-                    return `idx:${sourceIndex}`;
-                }
-                const name = item?.name ? normalizeText(item.name) : '';
-                if (name) return `name:${name}`;
-                const id = Number(item?.id);
-                if (Number.isFinite(id)) return `id:${id}`;
-                return 'unknown';
-            }
-
             function getScrollCounts(profileData, category) {
                 const baseItem = getScrollBaseItem(category);
                 if (!baseItem) return {};
-                const key = getScrollItemKey(baseItem);
-                const scrollTypes = profileData?.inventory?.scrollTypes || {};
-                const bucket = scrollTypes[category] || {};
-                const entry = bucket[key];
-                return entry?.counts && typeof entry.counts === 'object' ? { ...entry.counts } : {};
+                return window.astoriaScrollStore?.getCounts(profileData?.inventory?.scrollTypes, category, baseItem) || {};
             }
 
             async function applyScrollCost({ category, affinityKey, cost }) {
@@ -1544,58 +1673,28 @@
                 const baseItem = getScrollBaseItem(category);
                 if (!baseItem) return { ok: false, reason: 'missing-scroll-item' };
 
-                // Fetch full profile_data from DB: session-store strips inventory.scrollTypes,
-                // so reading from stripped data would always return current=0 → insufficient.
-                let freshProfile = null;
-                const cached = window.astoriaActiveCharacter;
-                if (cached?.id === active.id && cached.profile_data) {
-                    freshProfile = cached.profile_data;
-                } else {
-                    try {
-                        const fresh = await authApi.getCharacterById?.(active.id);
-                        if (fresh?.profile_data) {
-                            freshProfile = fresh.profile_data;
-                            try { window.astoriaActiveCharacter = fresh; } catch {}
-                        }
-                    } catch (e) { console.warn('[Fiche] fetch fresh profile failed:', e); }
-                }
-                const profileData = { ...(freshProfile || active.profile_data || {}) };
-                const inventory = { ...(profileData.inventory || {}) };
-                const scrollTypes = { ...(inventory.scrollTypes || {}) };
-                const bucket = { ...(scrollTypes[category] || {}) };
-                const itemKey = getScrollItemKey(baseItem);
-                const entry = bucket[itemKey] || {};
-                const counts = { ...(entry.counts || {}) };
-                const current = Number(counts[affinityKey]) || 0;
-                if (current < cost) {
-                    return { ok: false, reason: 'insufficient', current };
-                }
-                const next = Math.max(0, current - cost);
-                if (next > 0) {
+                // Read-modify-write on the fresh DB row (optimistic lock) so a cached
+                // profile_data never overwrites changes saved by another page.
+                const store = window.astoriaScrollStore;
+                if (!store || !authApi?.patchCharacterProfile) return { ok: false, reason: 'missing-data' };
+                let current = 0;
+                let next = 0;
+                const result = await authApi.patchCharacterProfile(active.id, (profileData) => {
+                    const inventory = { ...(profileData.inventory || {}) };
+                    const counts = store.getCounts(inventory.scrollTypes, category, baseItem) || {};
+                    current = Number(counts[affinityKey]) || 0;
+                    if (current < cost) return null;
+                    next = current - cost;
                     counts[affinityKey] = next;
-                } else {
-                    delete counts[affinityKey];
+                    inventory.scrollTypes = store.setCounts(inventory.scrollTypes, category, baseItem, counts);
+                    return { ...profileData, inventory };
+                });
+                if (!result.success) {
+                    return result.aborted
+                        ? { ok: false, reason: 'insufficient', current }
+                        : { ok: false, reason: 'save-failed' };
                 }
-                if (Object.keys(counts).length) {
-                    bucket[itemKey] = { counts, updatedAt: Date.now() };
-                } else {
-                    delete bucket[itemKey];
-                }
-                if (Object.keys(bucket).length) {
-                    scrollTypes[category] = bucket;
-                } else {
-                    delete scrollTypes[category];
-                }
-                inventory.scrollTypes = scrollTypes;
-                profileData.inventory = inventory;
-
-                if (authApi?.updateCharacter) {
-                    await authApi.updateCharacter(active.id, { profile_data: profileData }).catch(() => {});
-                }
-                try {
-                    const nextActive = { ...active, profile_data: profileData };
-                    localStorage.setItem(CHARACTER_STORAGE_KEY, JSON.stringify(nextActive));
-                } catch {}
+                try { window.astoriaActiveCharacter = { ...active, profile_data: result.profileData }; } catch {}
 
                 try {
                     const inventoryApi = await import('./js/api/inventory-service.js');
@@ -1729,7 +1828,15 @@
                     if (action === 'unlock') {
                         const cost = getEveilCost(affinityType);
                         const result = await applyScrollCost({ category: 'eveil', affinityKey, cost });
-                        if (!result.ok) return;
+                        if (!result.ok) {
+                            const message = result.reason === 'insufficient'
+                                ? `Parchemins d'éveil insuffisants (${Number(result.current) || 0}/${cost} de cette affinité).`
+                                : result.reason === 'save-failed'
+                                    ? 'Sauvegarde impossible, réessaie dans un instant.'
+                                    : "Parchemin d'éveil indisponible.";
+                            window.toastManager?.error?.(message);
+                            return;
+                        }
                         entry.unlocked = true;
                     }
 
@@ -1740,6 +1847,7 @@
             }
             if (addRelationBtn) {
                 addRelationBtn.addEventListener('click', () => {
+                    if (isPlayerTabLocked('background')) return;
                     if (!relationsContainer) return;
                     relationsContainer.appendChild(createRelationRow());
                     markTabDirty('background');
@@ -1747,6 +1855,7 @@
             }
             // Mark tab as dirty when any input changes
             function markTabDirty(tabName) {
+                if (isPlayerTabLocked(tabName)) return;
                 dirtyTabs.add(tabName);
                 const saveBtn = document.querySelector(`.save-tab-button[data-tab="${tabName}"]`);
                 if (saveBtn) {
@@ -1869,7 +1978,9 @@
             // Save button functionality
             saveButtons.forEach((btn) => {
                 btn.addEventListener('click', () => {
-                    saveAllTabs(btn);
+                    const tabName = btn.dataset.tab || '';
+                    if (!tabName) return;
+                    saveTab(tabName, btn);
                 });
             });
             // ====================================================================
@@ -1881,6 +1992,7 @@
             function renderCombatTechniques(filterType = "") {
                 const list = document.getElementById("combatTechniqueList");
                 if (!list) return;
+                const locked = isPlayerTabLocked('combat');
                 const filtered = filterType
                     ? combatTechniques.filter(t => t.type === filterType)
                     : combatTechniques;
@@ -1926,8 +2038,8 @@
                             </div>
                             ` : ''}
                             <div class="combat-technique-actions">
-                                <button type="button" class="combat-btn-edit tw-press" data-id="${technique.id}">Modifier</button>
-                                <button type="button" class="combat-btn-delete tw-press" data-id="${technique.id}">Supprimer</button>
+                                <button type="button" class="combat-btn-edit tw-press" data-id="${technique.id}" ${locked ? 'disabled' : ''}>Modifier</button>
+                                <button type="button" class="combat-btn-delete tw-press" data-id="${technique.id}" ${locked ? 'disabled' : ''}>Supprimer</button>
                             </div>
                         </div>
                     `;
@@ -1948,6 +2060,7 @@
              * Open technique modal for add/edit
              */
             function openTechniqueModal(techniqueId = null) {
+                if (isPlayerTabLocked('combat')) return;
                 const backdrop = document.getElementById("combatTechniqueBackdrop");
                 const form = document.getElementById("combatTechniqueForm");
                 const title = document.getElementById("combatModalTitle");
@@ -1985,6 +2098,7 @@
              * Save technique (add or update)
              */
             function saveTechnique(formData) {
+                if (isPlayerTabLocked('combat')) return;
                 const technique = {
                     id: editingTechniqueId || `tech-${techniqueNextId++}`,
                     name: formData.name,
@@ -2012,6 +2126,7 @@
              * Delete technique
              */
             function deleteTechnique(techniqueId) {
+                if (isPlayerTabLocked('combat')) return;
                 if (!confirm("Supprimer cette technique ?")) return;
                 combatTechniques = combatTechniques.filter(t => t.id !== techniqueId);
                 saveCombatData();
@@ -2061,6 +2176,10 @@
             // ====================================================================
             function saveTab(tabName, saveButton = null) {
                 try {
+                    if (isPlayerTabLocked(tabName)) {
+                        updateSaveButtonLockState(tabName);
+                        return;
+                    }
                     const panel = document.getElementById('tab-' + tabName);
                     if (!panel) return;
                     const data = {};
@@ -2100,9 +2219,11 @@
                     if (saveButton) {
                         saveButton.textContent = 'Sauvegardé ✓';
                         setTimeout(() => {
-                            saveButton.textContent = 'Sauvegarder';
+                            updateSaveButtonLockState(tabName);
                         }, 2000);
                     }
+                    clearTabDirty(tabName);
+                    finalizePlayerTabLock(tabName, data);
                 } catch (error) {
                     console.error(`[Fiche] Error saving tab ${tabName}:`, error);
                     console.error(`[Fiche] Save error details:`, {
@@ -2114,7 +2235,7 @@
                     if (saveButton) {
                         saveButton.textContent = 'Erreur de sauvegarde';
                         setTimeout(() => {
-                            saveButton.textContent = 'Sauvegarder';
+                            updateSaveButtonLockState(tabName);
                         }, 3000);
                     }
                 }
@@ -2128,7 +2249,7 @@
                 if (triggerButton) {
                     triggerButton.textContent = 'Tout sauvegardé ✓';
                     setTimeout(() => {
-                        triggerButton.textContent = 'Sauvegarder';
+                        updateSaveButtonLockState(triggerButton.dataset.tab || '');
                     }, 2000);
                 }
             }
@@ -2172,7 +2293,11 @@
                 const profileData = freshProfile || character.profile_data || {};
                 const nextProfileData = {
                     ...profileData,
-                    [tabName]: tabData
+                    [tabName]: tabData,
+                    fiche_locks: {
+                        ...(profileData.fiche_locks || {}),
+                        ...currentFicheLocks
+                    }
                 };
 
                 try {
@@ -2193,9 +2318,9 @@
                 const panel = document.getElementById('tab-' + tabName);
                 if (!panel) return;
 
-                // For alice and eater, prioritize profile_data from backend
+                // For magic/eater gating tabs, prioritize profile_data from backend
                 let data = null;
-                if ((tabName === 'alice' || tabName === 'eater') && authApi?.getActiveCharacter) {
+                if ((tabName === 'alice' || tabName === 'eater' || tabName === 'sorcellerie') && authApi?.getActiveCharacter) {
                     const character = authApi.getActiveCharacter();
                     if (character?.profile_data?.[tabName]) {
                         data = character.profile_data[tabName];
@@ -2323,14 +2448,15 @@
                 updateConditionalVisibility();
             }
             // Load all tabs on page load
-            const allTabs = ['identite', 'appartenance', 'combat', 'alice', 'sorcellerie', 'eater', 'religion', 'mental', 'physique', 'background'];
             function loadAllTabs() {
+                loadFicheLocks();
                 allTabs.forEach(loadTab);
                 updateAliceVisibility();
                 updateConditionalVisibility();
                 syncAliceEaterExclusion();
                 syncMagicSelections({ persistProfile: false });
                 updateAllImagePreviews();
+                applyAllTabLockStates();
             }
             const initialContext = summaryModule?.resolveCharacterContext
                 ? summaryModule.resolveCharacterContext({ includeQueryParam: true })
@@ -2506,6 +2632,8 @@
             function setFieldValue(id, value) {
                 const el = document.getElementById(id);
                 if (!el || value === undefined || value === null) return;
+                const tabName = el.closest('.tab-panel')?.id?.replace('tab-', '') || '';
+                if (tabName && isPlayerTabLocked(tabName)) return;
                 if (el.tagName === 'SELECT') {
                     setSelectByText(el, value);
                 } else if (el.type === 'checkbox') {
@@ -2520,6 +2648,8 @@
             function setCheckboxValue(id, checked) {
                 const el = document.getElementById(id);
                 if (!el) return;
+                const tabName = el.closest('.tab-panel')?.id?.replace('tab-', '') || '';
+                if (tabName && isPlayerTabLocked(tabName)) return;
                 el.checked = checked;
                 el.dispatchEvent(new Event('change', { bubbles: true }));
             }
@@ -2659,17 +2789,26 @@
             function applyFicheImport(items) {
                 if (!items.length) return { ok: false, message: 'Aucune info trouvee.' };
                 const touchedTabs = new Set();
+                const skippedTabs = new Set();
                 let hasMagic = false;
                 let hasEater = false;
                 let hasAlice = false;
 
                 items.forEach(({ entry, value }) => {
+                    if (isPlayerTabLocked(entry.section)) {
+                        skippedTabs.add(entry.section);
+                        return;
+                    }
                     entry.apply(value);
                     touchedTabs.add(entry.section);
                     if (entry.section === 'sorcellerie') hasMagic = true;
                     if (entry.section === 'eater') hasEater = true;
                     if (entry.section === 'alice') hasAlice = true;
                 });
+
+                if (!touchedTabs.size && skippedTabs.size) {
+                    return { ok: false, message: 'Import bloque: tous les volets cibles sont deja verrouilles.' };
+                }
 
                 if (hasMagic) setCheckboxValue('hasMagic', true);
                 if (hasEater) setCheckboxValue('hasEater', true);
@@ -2680,7 +2819,10 @@
                     syncMagicSelections({ persistProfile: false });
                 }
 
-                return { ok: true, message: `Import ok: ${items.length} champ(s).` };
+                const skippedSuffix = skippedTabs.size
+                    ? ` ${skippedTabs.size} volet(s) verrouille(s) ignores.`
+                    : '';
+                return { ok: true, message: `Import ok: ${items.length} champ(s).${skippedSuffix}` };
             }
 
             if (ficheImportBtn && ficheImportInput) {

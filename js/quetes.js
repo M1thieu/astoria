@@ -2,6 +2,7 @@ import { getActiveCharacter, getAllItems, getSupabaseClient, isAdmin, refreshSes
 import { initCharacterSummary } from "./ui/character-summary.js";
 import { getInventoryRows, setInventoryItem } from "./api/inventory-service.js";
 import { getCharacterById, updateCharacter } from "./api/characters-service.js";
+import { patchCharacterProfile } from "./api/profile-patch-service.js";
 import { initItemsModal } from "./quetes-items-modal.js";
 import { initSkillsRewardsModal } from "./quetes-skills-modal.js";
 import { initPrerequisitesModal } from "./quetes-prerequisites-modal.js";
@@ -479,18 +480,6 @@ function getScrollTypeKeyForReward(reward) {
     return REWARD_ELEMENT_MAP[element] || "";
 }
 
-function buildScrollItemKey(item) {
-    const sourceIndex = resolveSourceIndex(item);
-    if (Number.isFinite(sourceIndex) && sourceIndex >= 0) {
-        return `idx:${sourceIndex}`;
-    }
-    const name = item?.name ? normalizeText(item.name) : "";
-    if (name) {
-        return `name:${name}`;
-    }
-    return "";
-}
-
 function buildScrollRewardEntries(reward) {
     if (!reward || !reward.name) return [];
     const helper = window.astoriaItemTags;
@@ -501,9 +490,6 @@ function buildScrollRewardEntries(reward) {
     if (!category) return [];
     const qty = Math.max(0, Math.floor(Number(reward.qty) || 0));
     if (!qty) return [];
-    const itemKey = buildScrollItemKey(item);
-    if (!itemKey) return [];
-
     const groupedCounts = new Map();
 
     for (let index = 0; index < qty; index += 1) {
@@ -515,7 +501,7 @@ function buildScrollRewardEntries(reward) {
 
     return Array.from(groupedCounts.entries()).map(([typeKey, groupedQty]) => ({
         category,
-        itemKey,
+        item,
         typeKey,
         qty: groupedQty
     }));
@@ -1360,11 +1346,18 @@ async function refreshQuestStateFromBackend(options = {}) {
     }
 }
 
+let questRefreshPendingWhileHidden = false;
+
 function scheduleQuestRealtimeRefresh(options = {}) {
     const normalized = typeof options === "number" ? { delayMs: options } : options;
     const { delayMs = 180, refreshHistory = false } = normalized;
     if (refreshHistory) {
         questRealtimeNeedsHistoryRefresh = true;
+    }
+    // Background tabs refresh once when shown again instead of on every change.
+    if (document.hidden) {
+        questRefreshPendingWhileHidden = true;
+        return;
     }
     if (questRealtimeRefreshTimer) {
         window.clearTimeout(questRealtimeRefreshTimer);
@@ -1376,6 +1369,12 @@ function scheduleQuestRealtimeRefresh(options = {}) {
         void refreshQuestStateFromBackend({ refreshHistory: shouldRefreshHistory });
     }, Math.max(0, delayMs));
 }
+
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden || !questRefreshPendingWhileHidden) return;
+    questRefreshPendingWhileHidden = false;
+    scheduleQuestRealtimeRefresh({ delayMs: 0 });
+});
 
 function startQuestPollingFallback() {
     if (questRealtimePollingTimer) return;
@@ -1946,46 +1945,30 @@ async function applyCompetenceDelta(characterId, categoryId, delta) {
 
 async function applyScrollTypeRewards(characterId, entries) {
     if (!characterId || !Array.isArray(entries) || entries.length === 0) return false;
-    let profileData = null;
-    const active = getActiveCharacter?.();
-    if (active && active.id === characterId && active.profile_data) {
-        profileData = active.profile_data;
-    }
-    if (!profileData) {
-        const row = await getCharacterById(characterId);
-        profileData = row?.profile_data || null;
-    }
+    const store = window.astoriaScrollStore;
+    if (!store) return false;
+    const valid = entries.filter((entry) => entry?.category && entry.item && entry.typeKey && entry.qty > 0);
+    if (!valid.length) return false;
 
-    if (!profileData || typeof profileData !== "object") {
-        console.warn("[Quetes] profileData unavailable, abandon pour éviter d'écraser la DB");
-        return false;
-    }
-    const nextProfile = { ...profileData };
-    const inventory = { ...(nextProfile.inventory || {}) };
-    const scrollTypes = { ...(inventory.scrollTypes || {}) };
-    let updated = false;
-
-    entries.forEach((entry) => {
-        if (!entry || !entry.category || !entry.itemKey || !entry.typeKey || !entry.qty) return;
-        const bucket = { ...(scrollTypes[entry.category] || {}) };
-        const currentEntry = bucket[entry.itemKey] || {};
-        const counts = { ...(currentEntry.counts || {}) };
-        const current = Number(counts[entry.typeKey]) || 0;
-        counts[entry.typeKey] = current + entry.qty;
-        bucket[entry.itemKey] = { counts, updatedAt: Date.now() };
-        scrollTypes[entry.category] = bucket;
-        updated = true;
+    // Read-modify-write on the fresh DB row (optimistic lock): a cached
+    // profile_data would overwrite changes saved meanwhile by another page.
+    const result = await patchCharacterProfile(characterId, (profileData) => {
+        const inventory = { ...(profileData.inventory || {}) };
+        let scrollTypes = inventory.scrollTypes || {};
+        valid.forEach((entry) => {
+            const counts = store.getCounts(scrollTypes, entry.category, entry.item) || {};
+            counts[entry.typeKey] = (Number(counts[entry.typeKey]) || 0) + entry.qty;
+            scrollTypes = store.setCounts(scrollTypes, entry.category, entry.item, counts);
+        });
+        inventory.scrollTypes = scrollTypes;
+        return { ...profileData, inventory };
     });
 
-    if (!updated) return false;
-    inventory.scrollTypes = scrollTypes;
-    nextProfile.inventory = inventory;
-
-    const result = await updateCharacter(characterId, { profile_data: nextProfile });
-    if (result?.success && active && active.id === characterId) {
-        document.dispatchEvent(new CustomEvent("astoria:character-updated", { detail: { profile_data: nextProfile } }));
+    const active = getActiveCharacter?.();
+    if (result.success && active && active.id === characterId) {
+        document.dispatchEvent(new CustomEvent("astoria:character-updated", { detail: { profile_data: result.profileData } }));
     }
-    return Boolean(result?.success);
+    return Boolean(result.success);
 }
 
 async function applyRewardsToParticipants(quest, participantsOverride = null, rewardsOverride = null) {

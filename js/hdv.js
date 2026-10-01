@@ -4,8 +4,8 @@ import {
     refreshSessionUser,
     getUserCharacters,
     setActiveCharacter,
-    updateCharacter,
-    getAllItems
+    getAllItems,
+    patchCharacterProfile
 } from './auth.js';
 import { SESSION_VERSION } from './api/session-store.js';
 import {
@@ -211,22 +211,6 @@ function getScrollCategory(item) {
     return null;
 }
 
-function getScrollItemKey(entry) {
-    const sourceIndex = Number(entry?.sourceIndex);
-    if (Number.isFinite(sourceIndex) && sourceIndex >= 0) {
-        return `idx:${sourceIndex}`;
-    }
-    const name = entry?.name ? normalizeText(entry.name) : '';
-    if (name) {
-        return `name:${name}`;
-    }
-    const id = Number(entry?.id);
-    if (Number.isFinite(id)) {
-        return `id:${id}`;
-    }
-    return 'unknown';
-}
-
 function loadScrollTypeMeta() {
     if (scrollTypeMetaList && scrollTypeMetaMap) return;
     try {
@@ -272,46 +256,41 @@ function getScrollTypeKey(entry) {
     return null;
 }
 
+const BUY_ERROR_MESSAGES = {
+    'listing not found': 'Annonce introuvable.',
+    'listing not active': 'Annonce deja vendue ou retiree.',
+    'cannot buy your own listing': "Impossible d'acheter sa propre annonce avec le meme personnage.",
+    'invalid buyer character': 'Personnage acheteur invalide.',
+    'insufficient kaels': 'Kaels insuffisants.',
+    'invalid quantity': 'Quantite invalide.'
+};
+
+function translateBuyError(err) {
+    const message = String(err?.message || '').trim();
+    return BUY_ERROR_MESSAGES[message.toLowerCase()] || message || "Erreur lors de l'achat.";
+}
+
 function hasPositiveCounts(counts) {
     if (!counts || typeof counts !== 'object') return false;
     return Object.values(counts).some((value) => Number(value) > 0);
 }
 
-function getScrollTypeStoreFromLocal() {
-    try {
-        const raw = localStorage.getItem('astoria_active_character');
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        return parsed?.profile_data?.inventory?.scrollTypes || null;
-    } catch {
-        return null;
-    }
-}
-
-function getScrollTypeCounts(entry) {
-    const store =
+function getScrollTypeStore() {
+    // Only trust data loaded for the current character (getMyProfile reads the DB).
+    // The localStorage snapshot can belong to another character of the account.
+    return (
         state.character?.profile_data?.inventory?.scrollTypes ||
         state.profile?.character?.profile_data?.inventory?.scrollTypes ||
         state.profile?.inventory?.scrollTypes ||
-        getScrollTypeStoreFromLocal() ||
-        null;
-    if (!store || typeof store !== 'object') return null;
+        null
+    );
+}
+
+function getScrollTypeCounts(entry) {
     const category = getScrollCategory(entry);
-    if (!category || !store[category]) return null;
-    const bucket = store[category];
-    const keys = [];
-    const sourceIndex = Number(entry?.sourceIndex);
-    if (Number.isFinite(sourceIndex) && sourceIndex >= 0) {
-        keys.push(`idx:${sourceIndex}`);
-    }
-    if (entry?.name) {
-        keys.push(`name:${normalizeText(entry.name)}`);
-    }
-    for (const key of keys) {
-        if (bucket[key]?.counts && hasPositiveCounts(bucket[key].counts)) {
-            return bucket[key].counts;
-        }
-    }
+    if (!category) return null;
+    const counts = window.astoriaScrollStore?.getCounts(getScrollTypeStore(), category, entry) || null;
+    if (counts && hasPositiveCounts(counts)) return counts;
     const seededKey = getScrollTypeKey(entry);
     if (seededKey && Number(entry?.quantity) > 0) {
         return { [seededKey]: Math.max(0, Math.floor(Number(entry.quantity) || 0)) };
@@ -319,92 +298,45 @@ function getScrollTypeCounts(entry) {
     return null;
 }
 
-function buildScrollCountsForSale(entry, typeKey) {
-    if (!typeKey) return null;
-    const existing = getScrollTypeCounts(entry);
-    if (existing) return { ...existing };
-    const total = Math.max(0, Math.floor(Number(entry?.quantity) || 0));
-    if (total <= 0) return null;
-    return { [typeKey]: total };
+function syncCharacterProfile(profileData) {
+    if (!state.character) return;
+    state.character = { ...state.character, profile_data: profileData };
+    if (state.profile?.character?.id === state.character.id) {
+        state.profile.character = state.character;
+    }
+}
+
+// Adds `delta` (negative to remove) scrolls of `typeKey` on the fresh DB copy.
+async function applyScrollTypeDelta(entry, typeKey, delta) {
+    const category = getScrollCategory(entry);
+    const store = window.astoriaScrollStore;
+    if (!category || !store || !typeKey || !state.character?.id) return false;
+
+    const result = await patchCharacterProfile(state.character.id, (profileData) => {
+        const inventory = { ...(profileData.inventory || {}) };
+        const counts = store.getCounts(inventory.scrollTypes, category, entry) || {};
+        const nextValue = Math.max(0, (Number(counts[typeKey]) || 0) + Math.floor(delta));
+        if (delta < 0 && (Number(counts[typeKey]) || 0) <= 0) return null;
+        inventory.scrollTypes = store.setCounts(inventory.scrollTypes, category, entry, {
+            ...counts,
+            [typeKey]: nextValue
+        });
+        return { ...profileData, inventory };
+    });
+    if (!result.success) return false;
+    syncCharacterProfile(result.profileData);
+    broadcastInventorySync('scroll-types');
+    return true;
 }
 
 async function applyScrollTypeSale(entry, typeKey, quantity) {
-    if (!entry || !typeKey || !Number.isFinite(quantity) || quantity <= 0) return;
-    const category = getScrollCategory(entry);
-    if (!category || !state.character?.id) return;
-
-    const profileData = { ...(state.character.profile_data || {}) };
-    const inventory = { ...(profileData.inventory || {}) };
-    const scrollTypes = { ...(inventory.scrollTypes || {}) };
-    const itemKey = getScrollItemKey(entry);
-    const bucket = { ...(scrollTypes[category] || {}) };
-    const currentEntry = bucket[itemKey] || {};
-    const counts = buildScrollCountsForSale(entry, typeKey) || { ...(currentEntry.counts || {}) };
-    const current = Number(counts[typeKey]) || 0;
-    const next = Math.max(0, current - Math.floor(quantity));
-    if (next > 0) {
-        counts[typeKey] = next;
-    } else {
-        delete counts[typeKey];
-    }
-
-    const hasAny = Object.values(counts).some((value) => Number(value) > 0);
-    if (hasAny) {
-        bucket[itemKey] = { counts, updatedAt: Date.now() };
-    } else {
-        delete bucket[itemKey];
-    }
-
-    if (Object.keys(bucket).length) {
-        scrollTypes[category] = bucket;
-    } else {
-        delete scrollTypes[category];
-    }
-
-    inventory.scrollTypes = scrollTypes;
-    profileData.inventory = inventory;
-
-    const res = await updateCharacter(state.character.id, { profile_data: profileData });
-    if (res?.success && res.character) {
-        state.character = res.character;
-        if (state.profile?.character?.id === res.character.id) {
-            state.profile.character = res.character;
-        }
-        broadcastInventorySync('scroll-types');
-    }
+    if (!entry || !typeKey || !Number.isFinite(quantity) || quantity <= 0) return false;
+    return applyScrollTypeDelta(entry, typeKey, -quantity);
 }
 
 async function applyScrollTypeRestock(entry, typeKey, quantity) {
     if (!entry || !typeKey || !Number.isFinite(quantity) || quantity <= 0) return false;
-    const category = getScrollCategory(entry);
-    if (!category || !state.character?.id) return false;
-
-    const profileData = { ...(state.character.profile_data || {}) };
-    const inventory = { ...(profileData.inventory || {}) };
-    const scrollTypes = { ...(inventory.scrollTypes || {}) };
-    const itemKey = getScrollItemKey(entry);
-    const bucket = { ...(scrollTypes[category] || {}) };
-    const currentEntry = bucket[itemKey] || {};
-    const counts = { ...(currentEntry.counts || {}) };
-    const current = Number(counts[typeKey]) || 0;
-    const next = current + Math.floor(quantity);
-
-    counts[typeKey] = next;
-    bucket[itemKey] = { counts, updatedAt: Date.now() };
-    scrollTypes[category] = bucket;
-    inventory.scrollTypes = scrollTypes;
-    profileData.inventory = inventory;
-
-    const res = await updateCharacter(state.character.id, { profile_data: profileData });
-    if (res?.success && res.character) {
-        state.character = res.character;
-        if (state.profile?.character?.id === res.character.id) {
-            state.profile.character = res.character;
-        }
-        broadcastInventorySync('scroll-types');
-        return true;
-    }
-    return false;
+    return applyScrollTypeDelta(entry, typeKey, quantity);
 }
 
 function resolveRestockEntry(itemId, item) {
@@ -1344,6 +1276,11 @@ function renderListings(listings) {
             btn.disabled = true;
             btn.classList.add('is-disabled');
             tdAction.appendChild(btn);
+        } else if (listing.seller_character_id === state.character.id) {
+            btn.textContent = 'Votre annonce';
+            btn.disabled = true;
+            btn.classList.add('is-disabled');
+            tdAction.appendChild(btn);
         } else if (!canAffordFull && listing.quantity === 1) {
             btn.textContent = 'Trop cher';
             btn.disabled = true;
@@ -1397,7 +1334,7 @@ function renderListings(listings) {
                     }
                 } catch (err) {
                     console.error(err);
-                    setStatus(dom.search.status, err?.message || "Erreur lors de l'achat.", 'error');
+                    setStatus(dom.search.status, translateBuyError(err), 'error');
                 } finally {
                     btn.disabled = false;
                     btn.textContent = 'Acheter';
@@ -1571,17 +1508,15 @@ function populateScrollTypeSelect(entry, selectedKey = '') {
     dom.mine.scrollTypeSelect.innerHTML = '';
     const placeholder = document.createElement('option');
     placeholder.value = '';
-    placeholder.textContent = 'Choisir un type';
     dom.mine.scrollTypeSelect.appendChild(placeholder);
 
+    // Only offer types the character actually owns. Scrolls without an assigned
+    // type are sold as such (no type chosen): never invent one.
     const counts = entry ? getScrollTypeCounts(entry) : null;
-    let availableKeys = [];
-    if (counts && typeof counts === 'object') {
-        availableKeys = Object.keys(counts).filter((key) => (Number(counts[key]) || 0) > 0);
-    }
-    if (!availableKeys.length) {
-        availableKeys = getScrollTypeMetaList().map((type) => type.key);
-    }
+    const availableKeys = counts && typeof counts === 'object'
+        ? Object.keys(counts).filter((key) => (Number(counts[key]) || 0) > 0)
+        : [];
+    placeholder.textContent = availableKeys.length ? 'Choisir un type' : 'Type non attribue';
 
     for (const key of availableKeys) {
         const meta = getScrollTypeMeta(key);
@@ -2019,13 +1954,10 @@ function wireEvents() {
         const unitPrice = parsePriceInput(dom.mine.unitPrice.value);
         const isScroll = isScrollItem(entry);
         const scrollType = isScroll ? String(dom.mine.scrollTypeSelect?.value || '').trim() : '';
-        const scrollCounts = isScroll
-            ? (scrollType ? buildScrollCountsForSale(entry, scrollType) : getScrollTypeCounts(entry))
-            : null;
-        if (isScroll && scrollType) {
-            available = scrollCounts && typeof scrollCounts === 'object'
-                ? Math.max(0, Number(scrollCounts[scrollType]) || 0)
-                : 0;
+        const scrollCounts = isScroll ? getScrollTypeCounts(entry) : null;
+        const hasTypedScrolls = Boolean(scrollCounts && hasPositiveCounts(scrollCounts));
+        if (isScroll && hasTypedScrolls) {
+            available = Math.max(0, Number(scrollCounts[scrollType]) || 0);
         }
 
         if (!selectedValue) {
@@ -2044,16 +1976,16 @@ function wireEvents() {
             setStatus(dom.mine.status, 'Quantite invalide.', 'error');
             return;
         }
+        if (isScroll && hasTypedScrolls && !scrollType) {
+            setStatus(dom.mine.status, 'Selectionnez un type de parchemin.', 'error');
+            return;
+        }
         if (quantity > available) {
             setStatus(dom.mine.status, 'Stock insuffisant.', 'error');
             return;
         }
         if (unitPrice === null || unitPrice < 0) {
             setStatus(dom.mine.status, 'Prix invalide.', 'error');
-            return;
-        }
-        if (isScrollItem(entry) && !scrollType) {
-            setStatus(dom.mine.status, 'Selectionnez un type de parchemin.', 'error');
             return;
         }
 
@@ -2159,14 +2091,26 @@ async function init() {
 
 function initHdvRealtime() {
     let debounceTimer = null;
-    function onMarketChange() {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            if (state.tab === 'mine') void refreshMine();
-            else if (state.tab === 'history') void refreshHistory();
-            else void refreshSearch();
-        }, 800);
+    let pendingWhileHidden = false;
+    function refreshActiveTab() {
+        if (state.tab === 'mine') void refreshMine();
+        else if (state.tab === 'history') void refreshHistory();
+        else void refreshSearch();
     }
+    function onMarketChange() {
+        // Background tabs refresh once when shown again instead of on every change.
+        if (document.hidden) {
+            pendingWhileHidden = true;
+            return;
+        }
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(refreshActiveTab, 800);
+    }
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden || !pendingWhileHidden) return;
+        pendingWhileHidden = false;
+        refreshActiveTab();
+    });
 
     getSupabaseClient().then(sb => {
         if (!sb?.channel) return;

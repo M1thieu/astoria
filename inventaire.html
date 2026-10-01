@@ -1374,6 +1374,7 @@
 
 
     <script src="js/data.js"></script>
+    <script src="js/scroll-store.js"></script>
 
 
 
@@ -1849,6 +1850,11 @@
 
 
         let pendingProfileSaveTimer = null;
+        // Character whose inventory is currently loaded in memory. Saves always target
+        // this id (never "whatever character is active now") and are skipped until a
+        // load succeeded, so a failed/partial load can never overwrite the database.
+        let inventoryOwnerId = null;
+        let pendingSaveOwnerId = null;
 
 
 
@@ -2516,19 +2522,14 @@
             const character = authApi.getActiveCharacter();
             if (!character?.id) return;
 
-            const currentProfileData = character.profile_data || {};
-            const inventoryData = {
-                ...(currentProfileData.inventory || {}),
+            const result = await patchInventoryProfile(character.id, (inventory) => ({
+                ...inventory,
                 characterRank: rank,
                 characterRankScore: score,
                 characterRankSource: source
-            };
-            const nextProfileData = { ...currentProfileData, inventory: inventoryData };
-
-            try {
-                await authApi.updateCharacter(character.id, { profile_data: nextProfileData });
-            } catch (error) {
-                console.warn('Character rank save error:', error);
+            }));
+            if (!result.success) {
+                console.warn('Character rank save error:', result.error);
             }
         }
 
@@ -4150,66 +4151,17 @@
 
 
 
-            const currentProfileData = character.profile_data || {};
-
-
-
-            const inventoryData = { ...(currentProfileData.inventory || {}) };
-
-
-
-            if (safeSrc) {
-
-
-
-                inventoryData.characterSilhouette = safeSrc;
-
-
-
-            } else {
-
-
-
-                delete inventoryData.characterSilhouette;
-
-
-
-            }
-
-
-
-            const nextProfileData = {
-
-
-
-                ...currentProfileData,
-
-
-
-                inventory: inventoryData
-
-
-
-            };
-
-
-
-            try {
-
-
-
-                await authApi.updateCharacter(character.id, { profile_data: nextProfileData });
-
-
-
-            } catch (error) {
-
-
-
-                console.warn('Silhouette save error:', error);
-
-
-
+            const result = await patchInventoryProfile(character.id, (inventory) => {
+                const next = { ...inventory };
+                if (safeSrc) {
+                    next.characterSilhouette = safeSrc;
+                } else {
+                    delete next.characterSilhouette;
+                }
+                return next;
+            });
+            if (!result.success) {
+                console.warn('Silhouette save error:', result.error);
             }
 
 
@@ -4690,190 +4642,94 @@
         }
 
         async function loadInventory() {
-
-
-
+            await flushPendingInventorySave();
+            inventoryOwnerId = null;
             if (inventoryStorageMode !== 'character' || !authApi || !inventoryApi) {
                 inventoryItems = [];
                 syncCurrencyItem();
                 renderInventory();
-
-
-
                 return;
-
-
-
             }
-
-
-
             const character = authApi.getActiveCharacter?.();
+            if (!character?.id) return;
 
-
-
-            let payload = character?.profile_data?.inventory || null;
-
-            // session-store strips profile_data from localStorage to avoid QuotaExceededError.
-            // If inventory is missing from the cached character, fetch the full row from DB.
-            if (!payload && character?.id && authApi.getCharacterById) {
-                try {
-                    const freshChar = await authApi.getCharacterById(character.id);
-                    payload = freshChar?.profile_data?.inventory || null;
-                } catch (e) {
-                    console.warn('[Inventory Storage] Could not fetch fresh character profile for scroll types:', e);
-                }
-            }
-
-
-
-            const hasMigrated = payload?.migrated === true;
-
-
-
-            inventoryMigrated = hasMigrated;
-
-
-
-            if (payload && payload.scrollTypes && typeof payload.scrollTypes === 'object') {
-
-
-
-                scrollTypeStore = payload.scrollTypes;
-
-
-
-            } else {
-
-
-
-                scrollTypeStore = {};
-
-
-
-            }
-
-
-
-            // equippedSlots are now in character_equipped table — loaded below after rows
-            equippedSlots = {};
-
-
-
+            // Always read inventory metadata (scroll types, rank, silhouette) from the
+            // database: the cached character may be stale or stripped by session-store.
+            let payload = null;
+            let rows = null;
             try {
-
-
-
-                const rows = await inventoryApi.getInventoryRows?.(character.id);
-
-
-
-                if (Array.isArray(rows)) {
-
-
-
-                    if (rows.length > 0) {
-
-
-
-                        const normalizedRows = await reconcileInventoryRows(character?.id, rows);
-
-
-
-                        const missingRows = hydrateInventoryFromRows(normalizedRows) || [];
-                        const scrollStoreChanged = reconcileAllScrollTypeStores();
-
-                        if (scrollStoreChanged) {
-                            persistInventory();
-                        } else if (!Array.isArray(payload?.items) || payload.items.length !== inventoryItems.length) {
-                            await saveInventoryToCharacterProfile();
-                        }
-
-
-
-                        console.log(`Loaded ${inventoryItems.length} items from character_inventory`);
-
-                        // Load equipped slots from character_equipped table
-                        try {
-                            const equippedRows = await inventoryApi.getEquippedSlots?.(character.id);
-                            if (Array.isArray(equippedRows) && equippedRows.length > 0) {
-                                const fromDb = {};
-                                equippedRows.forEach((row) => {
-                                    const built = buildEquippedItem(row.item_key, row.item_index, row.item_id);
-                                    if (built && isItemEquippable(built)) {
-                                        fromDb[row.slot_key] = built;
-                                    }
-                                });
-                                equippedSlots = fromDb;
-                            }
-                        } catch (eqErr) {
-                            console.warn('[Inventory] Could not load equipped slots from DB:', eqErr);
-                        }
-
-                        if (missingRows.length) {
-
-
-
-                            await cleanupMissingInventoryRows(character?.id, missingRows);
-
-
-
-                        }
-
-
-
-                        return;
-
-
-
-                    }
-
-                    try {
-                        localStorage.removeItem(getInventoryItemsStorageKey());
-                    } catch {
-                        // ignore cleanup failures
-                    }
-
-
-
-                    hydrateInventoryFromRows([]);
-                    if (reconcileAllScrollTypeStores()) {
-                        persistInventory();
-                    }
-
-
-
-                    return;
-
-
-
-                }
-
-
-
+                const [freshChar, inventoryRows] = await Promise.all([
+                    authApi.getCharacterById?.(character.id),
+                    inventoryApi.getInventoryRows?.(character.id)
+                ]);
+                if (!freshChar) throw new Error('Character profile unavailable');
+                payload = freshChar.profile_data?.inventory || null;
+                rows = Array.isArray(inventoryRows) ? inventoryRows : [];
             } catch (error) {
                 const msg = String(error?.message || '').toLowerCase();
                 const isAbort = error?.name === 'AbortError' || msg.includes('signal is aborted') || msg.includes('aborted');
                 if (!isAbort) {
-                    console.warn('Inventory load error (character_inventory):', error);
+                    console.warn('Inventory load error:', error);
+                    window.toastManager?.error?.("Inventaire non chargé (connexion). Recharge la page avant de modifier quoi que ce soit.");
                 }
+                // Keep the owner unset: nothing will be written until a load succeeds.
+                inventoryItems = [];
+                scrollTypeStore = {};
+                return;
+            }
+            if (authApi.getActiveCharacter?.()?.id !== character.id) return; // switched meanwhile
 
+            inventoryMigrated = payload?.migrated === true;
+            scrollTypeStore = payload?.scrollTypes && typeof payload.scrollTypes === 'object'
+                ? payload.scrollTypes
+                : {};
+            // equippedSlots are now in character_equipped table — loaded below after rows
+            equippedSlots = {};
 
-
+            if (rows.length === 0) {
+                try {
+                    localStorage.removeItem(getInventoryItemsStorageKey());
+                } catch {
+                    // ignore cleanup failures
+                }
+                hydrateInventoryFromRows([]);
+                inventoryOwnerId = character.id;
+                if (reconcileAllScrollTypeStores()) {
+                    persistInventory();
+                }
+                return;
             }
 
-
-
-            hydrateInventoryFromRows([]);
-            if (reconcileAllScrollTypeStores()) {
+            const normalizedRows = await reconcileInventoryRows(character.id, rows);
+            const missingRows = hydrateInventoryFromRows(normalizedRows) || [];
+            inventoryOwnerId = character.id;
+            const scrollStoreChanged = reconcileAllScrollTypeStores();
+            if (scrollStoreChanged) {
                 persistInventory();
+            } else if (!Array.isArray(payload?.items) || payload.items.length !== inventoryItems.length) {
+                await saveInventoryToCharacterProfile(character.id);
             }
 
+            try {
+                const equippedRows = await inventoryApi.getEquippedSlots?.(character.id);
+                if (Array.isArray(equippedRows) && equippedRows.length > 0) {
+                    const fromDb = {};
+                    equippedRows.forEach((row) => {
+                        const built = buildEquippedItem(row.item_key, row.item_index, row.item_id);
+                        if (built && isItemEquippable(built)) {
+                            fromDb[row.slot_key] = built;
+                        }
+                    });
+                    equippedSlots = fromDb;
+                }
+            } catch (eqErr) {
+                console.warn('[Inventory] Could not load equipped slots from DB:', eqErr);
+            }
 
-
+            if (missingRows.length) {
+                await cleanupMissingInventoryRows(character.id, missingRows);
+            }
         }
-
-
 
         async function cleanupMissingInventoryRows(characterId, rows) {
 
@@ -4939,232 +4795,119 @@
 
 
 
-        async function saveInventoryToCharacterProfile() {
-
-
-
-            if (inventoryStorageMode !== 'character' || !authApi) return;
-
-
-
-            const character = authApi.getActiveCharacter?.();
-
-
-
-            if (!character || !character.id) return;
-
-
-
-            const currentProfileData = character.profile_data || {};
-
-
-
-            const nextProfileData = {
-
-
-
-                ...currentProfileData,
-
-
-
-                inventory: serializeInventoryForProfile(),
-
-
-
-            };
-
-
-
-            try {
-
-
-
-                const res = await authApi.updateCharacter?.(character.id, { profile_data: nextProfileData });
-
-
-
-                if (!res || !res.success) {
-
-
-
-                    console.warn('Inventory save failed (profile_data).');
-
-
-
-                }
-
-
-
-            } catch (error) {
-
-
-
-                console.warn('Inventory save error (profile_data):', error);
-
-
-
+        async function patchInventoryProfile(characterId, mutateInventory) {
+            if (!characterId || !authApi?.patchCharacterProfile) {
+                return { success: false, error: new Error('Profile patch unavailable') };
             }
-
-
-
+            return authApi.patchCharacterProfile(characterId, (profileData) => {
+                const inventory = mutateInventory({ ...(profileData.inventory || {}) });
+                return inventory ? { ...profileData, inventory } : null;
+            });
         }
 
+        // Per scroll item, keep the most recently updated distribution between the
+        // database copy and the in-memory one (another page may have changed it).
+        function mergeScrollTypeStores(remoteStore, localStore) {
+            const store = window.astoriaScrollStore;
+            let merged = {};
+            inventoryItems.forEach((item) => {
+                const category = getScrollCategory(item);
+                if (!category) return;
+                const qty = Math.floor(Number(item?.quantity) || 0);
+                const remote = store.findEntry(remoteStore?.[category], item, qty);
+                const local = store.findEntry(localStore?.[category], item, qty);
+                let pick = remote || local;
+                if (remote && local) {
+                    pick = (Number(remote.entry.updatedAt) || 0) > (Number(local.entry.updatedAt) || 0) ? remote : local;
+                }
+                if (!pick) return;
+                merged = store.setCounts(merged, category, item, pick.entry.counts);
+                const entry = merged[category]?.[store.getCanonicalKey(item)];
+                if (entry) entry.updatedAt = Number(pick.entry.updatedAt) || 0;
+            });
+            return merged;
+        }
 
-
-        async function saveInventoryToBackend() {
-
-
-
-            if (inventoryStorageMode !== 'character' || !authApi || !inventoryApi) {
-                console.warn('[Inventory Storage] Backend save skipped:', {
-                    mode: inventoryStorageMode,
-                    hasAuth: !!authApi,
-                    hasInventoryApi: !!inventoryApi
-                });
+        async function saveInventoryToCharacterProfile(ownerId) {
+            if (inventoryStorageMode !== 'character' || !ownerId) return;
+            const localInventory = serializeInventoryForProfile();
+            const result = await patchInventoryProfile(ownerId, (inventory) => ({
+                ...inventory,
+                ...localInventory,
+                scrollTypes: mergeScrollTypeStores(inventory.scrollTypes, scrollTypeStore)
+            }));
+            if (!result.success) {
+                console.warn('Inventory save error (profile_data):', result.error);
                 return;
             }
+            if (ownerId === inventoryOwnerId) {
+                scrollTypeStore = result.profileData?.inventory?.scrollTypes || {};
+            }
+        }
 
-
-
-            const character = authApi.getActiveCharacter?.();
-
-
-
-            if (!character || !character.id) {
-                console.warn('[Inventory Storage] Backend save skipped: No character or character ID');
+        async function saveInventoryToBackend(ownerId) {
+            if (inventoryStorageMode !== 'character' || !authApi || !inventoryApi || !ownerId) {
                 return;
             }
-
-
-
-            const rows = buildInventoryRows(character.id);
-
-            console.log(`[Inventory Storage] Saving ${rows.length} items to database for character ${character.id}...`);
-
-
-
+            // The in-memory inventory now belongs to another character: never write it.
+            if (ownerId !== inventoryOwnerId) {
+                console.warn('[Inventory Storage] Save skipped: inventory owner changed before save.');
+                return;
+            }
+            const rows = buildInventoryRows(ownerId);
             let saved = false;
-
-
-
             try {
-
-
-
-                await inventoryApi.replaceInventoryRows?.(character.id, rows);
-
-
-
+                await inventoryApi.replaceInventoryRows?.(ownerId, rows);
                 saved = true;
-
-                console.log('[Inventory Storage] ✅ Successfully saved inventory to database!');
-
-
-
             } catch (error) {
-
-
-
                 console.warn('Inventory save error (character_inventory):', error);
-
-
-
+                window.toastManager?.error?.("Sauvegarde de l'inventaire impossible. Réessaie dans un instant.");
             }
-
-            // Save kaels to character.kaels field
+            const character = authApi.getActiveCharacter?.();
             const currencyItem = inventoryItems.find(item => item?.isCurrency);
-            if (currencyItem && Number.isFinite(currencyItem.quantity)) {
+            if (character?.id === ownerId && currencyItem && Number.isFinite(currencyItem.quantity)) {
                 const kaels = Math.max(0, Math.floor(currencyItem.quantity));
                 const currentKaels = Number(character?.kaels ?? 0);
-
                 if (kaels !== currentKaels) {
                     try {
-                        await authApi.updateCharacter?.(character.id, { kaels });
-                        console.log(`[Inventory Storage] ✅ Updated kaels: ${currentKaels} → ${kaels}`);
+                        await authApi.updateCharacter?.(ownerId, { kaels });
                     } catch (error) {
                         console.warn('Kaels save error:', error);
                     }
                 }
             }
-
-
-
-            await saveInventoryToCharacterProfile();
-
-
-
+            await saveInventoryToCharacterProfile(ownerId);
             if (saved) {
-
-
-
                 broadcastInventorySync('save');
-
-
-
             }
-
-
-
         }
-
-
 
         function persistInventory() {
-
-
-
             // Always keep local backup (handy for offline testing)
-
-
-
             saveToLocalStorage();
-
-
-
-            if (inventoryStorageMode !== 'character') {
-                console.log('[Inventory Storage] Persist: Mode is LOCAL - only saved to localStorage (not database)');
-                return;
-            }
-
-            console.log('[Inventory Storage] Persist: Scheduling database save...');
-
-
-
+            if (inventoryStorageMode !== 'character') return;
+            if (!inventoryOwnerId) return;
             if (pendingProfileSaveTimer) {
-
-
-
                 clearTimeout(pendingProfileSaveTimer);
-
-
-
-                pendingProfileSaveTimer = null;
-
-
-
             }
-
-
-
+            pendingSaveOwnerId = inventoryOwnerId;
             pendingProfileSaveTimer = setTimeout(() => {
-
-
-
+                const ownerId = pendingSaveOwnerId;
                 pendingProfileSaveTimer = null;
-
-
-
-                void saveInventoryToBackend();
-
-
-
+                pendingSaveOwnerId = null;
+                void saveInventoryToBackend(ownerId);
             }, 500);
-
-
-
         }
 
-
+        // Runs a pending debounced save now (before switching character / leaving).
+        async function flushPendingInventorySave() {
+            if (!pendingProfileSaveTimer) return;
+            clearTimeout(pendingProfileSaveTimer);
+            const ownerId = pendingSaveOwnerId;
+            pendingProfileSaveTimer = null;
+            pendingSaveOwnerId = null;
+            await saveInventoryToBackend(ownerId);
+        }
 
         /**
 
@@ -6211,64 +5954,9 @@
 
 
         function getScrollItemKey(item) {
-
-
-
-            const sourceIndex = Number(item?.sourceIndex);
-
-
-
-            if (Number.isFinite(sourceIndex)) {
-
-
-
-                return `idx:${sourceIndex}`;
-
-
-
-            }
-
-
-
-            const name = item?.name ? normalizeText(item.name) : '';
-
-
-
-            if (name) {
-
-
-
-                return `name:${name}`;
-
-
-
-            }
-
-
-
-            const id = Number(item?.id);
-
-
-
-            if (Number.isFinite(id)) {
-
-
-
-                return `id:${id}`;
-
-
-
-            }
-
-
-
-            return 'unknown';
-
-
-
+            // Shared canonical key (js/scroll-store.js) so every page reads/writes the same entry.
+            return window.astoriaScrollStore.getCanonicalKey(item);
         }
-
-
 
         function getScrollStorageKey(category, item, useLegacy = false) {
 
@@ -6302,33 +5990,7 @@
 
 
 
-            const itemKey = getScrollItemKey(item);
-
-
-
-            if (scrollTypeStore?.[category]) {
-
-
-
-                delete scrollTypeStore[category][itemKey];
-
-
-
-                if (Object.keys(scrollTypeStore[category]).length === 0) {
-
-
-
-                    delete scrollTypeStore[category];
-
-
-
-                }
-
-
-
-            }
-
-
+            scrollTypeStore = window.astoriaScrollStore.setCounts(scrollTypeStore, category, item, {});
 
             const key = getScrollStorageKey(category, item, false);
 
@@ -6491,231 +6153,23 @@
 
 
 
-        function buildScrollItemKeyMap() {
-
-
-
-            const map = {};
-
-
-
-            inventoryItems.forEach((item) => {
-
-
-
-                const category = getScrollCategory(item);
-
-
-
-                if (!category) return;
-
-
-
-                if (!map[category]) {
-
-
-
-                    map[category] = new Set();
-
-
-
-                }
-
-
-
-                map[category].add(getScrollItemKey(item));
-
-
-
-            });
-
-
-
-            return map;
-
-
-
-        }
-
-
-
         function normalizeScrollTypeStore(rawStore) {
-
-
-
             if (!rawStore || typeof rawStore !== 'object') return {};
-
-
-
-            const allowedKeys = buildScrollItemKeyMap();
-
-
-
-            const cleaned = {};
-
-
-
-            Object.entries(rawStore).forEach(([category, items]) => {
-
-
-
-                if (!items || typeof items !== 'object') return;
-
-
-
-                if (!allowedKeys[category]) return;
-
-
-
-                const cleanedItems = {};
-
-
-
-                Object.entries(items).forEach(([itemKey, entry]) => {
-
-
-
-                    if (!allowedKeys[category].has(itemKey)) return;
-
-
-
-                    const counts = normalizeScrollCounts(entry?.counts);
-
-
-
-                    const hasAny = Object.values(counts).some((value) => value > 0);
-
-
-
-                    if (!hasAny) return;
-
-
-
-                    cleanedItems[itemKey] = {
-
-
-
-                        counts,
-
-
-
-                        updatedAt: entry?.updatedAt || Date.now()
-
-
-
-                    };
-
-
-
-                });
-
-
-
-                if (Object.keys(cleanedItems).length) {
-
-
-
-                    cleaned[category] = cleanedItems;
-
-
-
-                }
-
-
-
-            });
-
-
-
-            return cleaned;
-
-
-
+            // One entry per scroll item still in the inventory, under its canonical
+            // key (legacy alias keys are migrated), positive counts only.
+            return mergeScrollTypeStores(rawStore, null);
         }
-
-
 
         function getScrollStoreEntry(category, item) {
-
-
-
             if (!scrollTypeStore || typeof scrollTypeStore !== 'object') return null;
-
-
-
-            const itemKey = getScrollItemKey(item);
-
-
-
-            const bucket = scrollTypeStore[category];
-
-
-
-            if (!bucket || typeof bucket !== 'object') return null;
-
-
-
-            return bucket[itemKey] || null;
-
-
-
+            return window.astoriaScrollStore.findEntry(scrollTypeStore[category], item)?.entry || null;
         }
-
-
 
         function setScrollStoreEntry(category, item, counts) {
-
-
-
-            if (!scrollTypeStore || typeof scrollTypeStore !== 'object') {
-
-
-
-                scrollTypeStore = {};
-
-
-
-            }
-
-
-
-            const itemKey = getScrollItemKey(item);
-
-
-
-            if (!scrollTypeStore[category]) {
-
-
-
-                scrollTypeStore[category] = {};
-
-
-
-            }
-
-
-
-            scrollTypeStore[category][itemKey] = {
-
-
-
-                counts: normalizeScrollCounts(counts),
-
-
-
-                updatedAt: Date.now()
-
-
-
-            };
-
-
-
+            scrollTypeStore = window.astoriaScrollStore.setCounts(scrollTypeStore, category, item, counts);
         }
 
-
-
-        function loadScrollCountsFromLocalStorage(category, item) {
+        function loadScrollCountsFromLocalStorage(category, item, { scopedOnly = false } = {}) {
 
 
 
@@ -6735,7 +6189,11 @@
 
 
 
-            const raw = localStorage.getItem(key)
+            // Unscoped/legacy keys are shared by every character of the browser:
+            // never use them for a character inventory (cross-character contamination).
+            const raw = scopedOnly
+                ? localStorage.getItem(key)
+                : localStorage.getItem(key)
                 || localStorage.getItem(unscopedKey)
                 || (legacyKey !== key ? localStorage.getItem(legacyKey) : null)
                 || (legacyUnscopedKey !== legacyKey ? localStorage.getItem(legacyUnscopedKey) : null);
@@ -6855,7 +6313,7 @@
 
 
 
-                    const legacy = loadScrollCountsFromLocalStorage(category, item);
+                    const legacy = loadScrollCountsFromLocalStorage(category, item, { scopedOnly: true });
 
 
 
@@ -6971,11 +6429,11 @@
 
 
 
-            const key = getScrollStorageKey(category, item, false);
-
-
-
-            localStorage.setItem(key, JSON.stringify(payload));
+            if (inventoryStorageMode !== 'character' || !authApi) {
+                try {
+                    localStorage.setItem(getScrollStorageKey(category, item, false), JSON.stringify(payload));
+                } catch {}
+            }
 
 
 
@@ -11360,8 +10818,18 @@
         window.addEventListener('DOMContentLoaded', initInventory);
 
         window.addEventListener('astoria:character-changed', async () => {
+            // Save the previous character's pending edits before anything is reset.
+            await flushPendingInventorySave();
             await initInventoryStorage();
             await loadInventory();
+            await refreshCharacterRankFromCompetences({ enforce: true, silent: true });
+            syncCurrencyItem();
+            await loadCharacterSilhouette();
+            renderInventory();
+        });
+
+        window.addEventListener('pagehide', () => {
+            void flushPendingInventorySave();
         });
 
 
