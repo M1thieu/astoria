@@ -10,12 +10,17 @@ import { logQuestJoin, logActivity, ActionTypes } from "./api/activity-logger.js
 import { createFilterBar, itemMatchesFilters, sortItemsBy, normalizeFilter } from "./components/ui/FilterBar.js";
 
 // Safe sanitizer wrapper with fallback when sanitizer not available
+// Plain text (names, labels, URLs) inserted into HTML templates: escape it,
+// including quotes for attribute values. Never returns raw input.
 function clean(value) {
-    if (window.sanitizer?.clean) {
-        return window.sanitizer.clean(value);
-    }
-    // Fallback: return value as-is if sanitizer not loaded
-    return String(value || '');
+    if (!value) return ''; // same as before for empty values and 0
+    if (window.sanitizer?.escapeHtml) return window.sanitizer.escapeHtml(value);
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 const QUEST_TYPES = ["Exp\u00E9dition", "Chasse", "Assistance", "Investigation", "Evenementiel"];

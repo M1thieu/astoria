@@ -139,6 +139,17 @@ class Sanitizer {
     }
 
     /**
+     * Échappe du texte brut (noms, libellés, URL) pour l'insérer dans du HTML,
+     * y compris dans un attribut. À utiliser pour toute donnée non HTML.
+     * @param {*} text
+     * @returns {string}
+     */
+    escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        return this._escapeHtml(text);
+    }
+
+    /**
      * Escape HTML (fallback si DOMPurify absent)
      * @private
      */
@@ -209,8 +220,11 @@ class Sanitizer {
     }
 }
 
-// Instance globale
+// Instance globale (aussi sur window : les modules et scripts l'appellent via window.sanitizer)
 const sanitizer = new Sanitizer();
+if (typeof window !== 'undefined') {
+    window.sanitizer = sanitizer;
+}
 
 // Export pour modules
 if (typeof module !== 'undefined' && module.exports) {

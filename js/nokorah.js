@@ -1,3 +1,15 @@
+// Player-entered text (Nokorah name, picture URL, bonus names) inserted into
+// HTML templates. Labels of this file keep their HTML entities on purpose.
+function escapeHtml(value) {
+    if (window.sanitizer?.escapeHtml) return window.sanitizer.escapeHtml(String(value));
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 const RARITY_ORDER = ["commun", "rare", "epique", "mythique", "legendaire"];
 const RARITY_LABELS = {
     commun: "Commun",
@@ -528,7 +540,7 @@ function buildBonusChips() {
     const displayBonuses = bonusesExpanded ? sorted : sorted.slice(0, MAX_DISPLAY);
 
     const chips = displayBonuses
-        .map((bonus) => `<span class="bonus-chip">+${bonus.points} ${bonus.name}</span>`)
+        .map((bonus) => `<span class="bonus-chip">+${escapeHtml(bonus.points)} ${escapeHtml(bonus.name)}</span>`)
         .join("");
 
     // Show expand/collapse button if there are more than 5
@@ -581,12 +593,12 @@ function renderActive(root) {
     root.innerHTML = `
         <div class="nokorah-card">
             <div class="nokorah-card-media ${rarityClass}">
-                <img src="${active?.appearanceSrc || PRESET_APPEARANCES[0].src}" alt="Portrait Nokorah">
+                <img src="${escapeHtml(active?.appearanceSrc || PRESET_APPEARANCES[0].src)}" alt="Portrait Nokorah">
             </div>
             <div>
                 <div class="nokorah-card-header">
                     <div>
-                        <h3 class="nokorah-name">${active?.name || "Nokorah"}</h3>
+                        <h3 class="nokorah-name">${escapeHtml(active?.name || "Nokorah")}</h3>
                         <div class="nokorah-meta">
                             <span class="${badgeClass}">${RARITY_LABELS[rarity]}</span>
                             <span class="status-badge">${active?.statusLabel || "Combat"}</span>

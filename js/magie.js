@@ -1,4 +1,16 @@
 ﻿(function () {
+    // Player-entered text (capacity names, notes, magic names...) inserted into
+    // HTML templates. Same text as before (String(value)), but never parsed as HTML.
+    function escapeHtml(value) {
+        if (window.sanitizer?.escapeHtml) return window.sanitizer.escapeHtml(String(value));
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     const STORAGE_KEY_BASE = "magicSheetPages";
     const FULL_PROFILE_FLAG = "__astoriaProfileHydrated";
     const body = document.body;
@@ -671,7 +683,7 @@
         if (!capacities.length) {
             spellsContainer.innerHTML = `
                 <article class="magic-card tw-surface tw-hover">
-                    <h3 class="magic-card-title">${config.title}</h3>
+                    <h3 class="magic-card-title">${escapeHtml(config.title)}</h3>
                     <p class="magic-section-help">Aucun sort enregistré pour cette catégorie.</p>
                 </article>
             `;
@@ -695,23 +707,23 @@
                 <div class="flip-card-inner">
                     <div class="flip-card-front">
                         <div class="spell-card-front-header">
-                            <h3 class="spell-card-name">${cap.name || "Sans nom"}</h3>
-                            <span class="spell-card-level">Niv. ${level}</span>
+                            <h3 class="spell-card-name">${escapeHtml(cap.name || "Sans nom")}</h3>
+                            <span class="spell-card-level">Niv. ${escapeHtml(level)}</span>
                         </div>
                         <div class="spell-card-badges">
-                            <span class="spell-card-badge badge-offensif">${typeLabel}</span>
-                            <span class="spell-card-badge badge-zone">${rankLabel}</span>
+                            <span class="spell-card-badge badge-offensif">${escapeHtml(typeLabel)}</span>
+                            <span class="spell-card-badge badge-zone">${escapeHtml(rankLabel)}</span>
                         </div>
-                        <p class="spell-card-preview">${summary}</p>
+                        <p class="spell-card-preview">${escapeHtml(summary)}</p>
                         <div class="flip-hint">Cliquer pour détails</div>
                     </div>
                     <div class="flip-card-back">
-                        <h4 class="spell-card-name">${cap.name || "Sans nom"}</h4>
-                        <p><strong>RP :</strong> ${rp}</p>
-                        <p><strong>Effet :</strong> ${effect}</p>
-                        <p><strong>Coût :</strong> ${cap.cost || "-"}</p>
-                        <p><strong>Limites :</strong> ${cap.limits || "-"}</p>
-                        <button type="button" class="magic-btn magic-btn-outline tw-press" data-edit-capacity="${cap.id}" ${isAdmin ? "" : "hidden"}>
+                        <h4 class="spell-card-name">${escapeHtml(cap.name || "Sans nom")}</h4>
+                        <p><strong>RP :</strong> ${escapeHtml(rp)}</p>
+                        <p><strong>Effet :</strong> ${escapeHtml(effect)}</p>
+                        <p><strong>Coût :</strong> ${escapeHtml(cap.cost || "-")}</p>
+                        <p><strong>Limites :</strong> ${escapeHtml(cap.limits || "-")}</p>
+                        <button type="button" class="magic-btn magic-btn-outline tw-press" data-edit-capacity="${escapeHtml(cap.id)}" ${escapeHtml(isAdmin ? "" : "hidden")}>
                             Modifier
                         </button>
                     </div>
@@ -2219,8 +2231,8 @@
             pill.type = "button";
             pill.className = "magic-page-pill" + (index === activePageIndex ? " magic-page-pill--active" : "");
             pill.innerHTML = `
-                <span class="magic-page-pill-title">${name}</span>
-                <span class="magic-page-pill-meta">${specLabel}${levelLabel ? ` • ${levelLabel}` : ""}</span>
+                <span class="magic-page-pill-title">${escapeHtml(name)}</span>
+                <span class="magic-page-pill-meta">${escapeHtml(specLabel)}${escapeHtml(levelLabel ? ` • ${levelLabel}` : "")}</span>
             `;
             pill.addEventListener("click", () => setActivePage(index));
             pagesOverview.appendChild(pill);
@@ -2357,9 +2369,9 @@
                                      cap.type === "soutien" ? "Soutien" : "Utilitaire";
 
                     const tags = [];
-                    if (cap.target) tags.push(`<span class="spell-pill spell-pill--target">${cap.target}</span>`);
-                    if (cap.distance) tags.push(`<span class="spell-pill spell-pill--distance">${cap.distance}</span>`);
-                    if (cap.cost) tags.push(`<span class="spell-pill spell-pill--cost">${cap.cost}</span>`);
+                    if (cap.target) tags.push(`<span class="spell-pill spell-pill--target">${escapeHtml(cap.target)}</span>`);
+                    if (cap.distance) tags.push(`<span class="spell-pill spell-pill--distance">${escapeHtml(cap.distance)}</span>`);
+                    if (cap.cost) tags.push(`<span class="spell-pill spell-pill--cost">${escapeHtml(cap.cost)}</span>`);
 
                     const card = document.createElement("article");
                     card.className = "spell-card";
@@ -2368,15 +2380,15 @@
                     card.innerHTML = `
                         <div class="spell-card-header">
                             <div class="spell-card-title-row">
-                                <h4 class="spell-card-name">${cap.name || "Sans nom"}</h4>
-                                <span class="spell-card-level">Niv. ${level}</span>
+                                <h4 class="spell-card-name">${escapeHtml(cap.name || "Sans nom")}</h4>
+                                <span class="spell-card-level">Niv. ${escapeHtml(level)}</span>
                             </div>
                             <div class="spell-card-meta">
-                                <span class="spell-badge spell-badge--type">${typeLabel}</span>
-                                <span class="spell-badge spell-badge--rank">${rankLabel}</span>
+                                <span class="spell-badge spell-badge--type">${escapeHtml(typeLabel)}</span>
+                                <span class="spell-badge spell-badge--rank">${escapeHtml(rankLabel)}</span>
                             </div>
                         </div>
-                        <div class="spell-card-summary">${cap.summary || "Aucune description"}</div>
+                        <div class="spell-card-summary">${escapeHtml(cap.summary || "Aucune description")}</div>
                         ${tags.length ? `<div class="spell-card-tags">${tags.join('')}</div>` : ''}
                     `;
 
@@ -2444,52 +2456,52 @@
                             const snap = entry.snapshot;
                             return `
                             <div class="magic-capacity-history-card">
-                                <div class="magic-capacity-field-label">Niveau ${entry.level}</div>
-                                <div class="magic-capacity-field-value">${snap.name || cap.name}</div>
-                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${snap.type || cap.type} • ${snap.rank || cap.rank}</div>
-                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${snap.summary || cap.summary || "-"}</div>
-                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${snap.target || cap.target || "-"} ${snap.zoneType || cap.zoneType || ""} ${snap.distance || cap.distance || ""}</div>
-                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${snap.rp || "-"}</div>
-                                <div class="magic-capacity-field-value">${snap.effect || "-"}</div>
-                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${snap.conditions || "-"}</div>
-                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${snap.strengths || "-"}</div>
-                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${snap.weaknesses || "-"}</div>
-                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${snap.cost || "-"}</div>
-                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${snap.limits || "-"}</div>
+                                <div class="magic-capacity-field-label">Niveau ${escapeHtml(entry.level)}</div>
+                                <div class="magic-capacity-field-value">${escapeHtml(snap.name || cap.name)}</div>
+                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(snap.type || cap.type)} • ${escapeHtml(snap.rank || cap.rank)}</div>
+                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(snap.summary || cap.summary || "-")}</div>
+                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(snap.target || cap.target || "-")} ${escapeHtml(snap.zoneType || cap.zoneType || "")} ${escapeHtml(snap.distance || cap.distance || "")}</div>
+                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(snap.rp || "-")}</div>
+                                <div class="magic-capacity-field-value">${escapeHtml(snap.effect || "-")}</div>
+                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(snap.conditions || "-")}</div>
+                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(snap.strengths || "-")}</div>
+                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(snap.weaknesses || "-")}</div>
+                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(snap.cost || "-")}</div>
+                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(snap.limits || "-")}</div>
                             </div>
                             `;
                         }
                         return `
                         <div class="magic-capacity-history-card">
-                            <div class="magic-capacity-field-label">Niveau ${entry.level}</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${entry.note || "Aucun détail."}</div>
+                            <div class="magic-capacity-field-label">Niveau ${escapeHtml(entry.level)}</div>
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(entry.note || "Aucun détail.")}</div>
                         </div>
                         `;
                     }).join("")
                     : `<div class="magic-capacity-field-value magic-capacity-field-value--dim">Aucun historique.</div>`;
                 const typeOptions = CAPACITY_TYPES.map((option) =>
-                    `<option value="${option.value}" ${option.value === cap.type ? "selected" : ""}>${option.label}</option>`
+                    `<option value="${escapeHtml(option.value)}" ${escapeHtml(option.value === cap.type ? "selected" : "")}>${escapeHtml(option.label)}</option>`
                 ).join("");
                 const rankOptions = CAPACITY_RANKS.map((option) =>
-                    `<option value="${option.value}" ${option.value === cap.rank ? "selected" : ""}>${option.label}</option>`
+                    `<option value="${escapeHtml(option.value)}" ${escapeHtml(option.value === cap.rank ? "selected" : "")}>${escapeHtml(option.label)}</option>`
                 ).join("");
                 const targetOptions = [
                     { value: "mono", label: "Mono-cible" },
                     { value: "zone", label: "Zone" }
-                ].map((option) => `<option value="${option.value}" ${option.value === cap.target ? "selected" : ""}>${option.label}</option>`).join("");
+                ].map((option) => `<option value="${escapeHtml(option.value)}" ${escapeHtml(option.value === cap.target ? "selected" : "")}>${escapeHtml(option.label)}</option>`).join("");
                 const zoneOptions = [
                     { value: "", label: "Aucune" },
                     { value: "cone", label: "Cone" },
                     { value: "cercle", label: "Cercle" },
                     { value: "ligne", label: "Ligne" },
                     { value: "autre", label: "Autre" }
-                ].map((option) => `<option value="${option.value}" ${option.value === cap.zoneType ? "selected" : ""}>${option.label}</option>`).join("");
+                ].map((option) => `<option value="${escapeHtml(option.value)}" ${escapeHtml(option.value === cap.zoneType ? "selected" : "")}>${escapeHtml(option.label)}</option>`).join("");
                 const distanceOptions = [
                     { value: "cac", label: "Corps-a-corps (0-5m)" },
                     { value: "courte", label: "Courte (5-10m)" },
                     { value: "moyenne", label: "Moyenne (10-20m)" },
                     { value: "longue", label: "Longue (20m+)" }
-                ].map((option) => `<option value="${option.value}" ${option.value === cap.distance ? "selected" : ""}>${option.label}</option>`).join("");
+                ].map((option) => `<option value="${escapeHtml(option.value)}" ${escapeHtml(option.value === cap.distance ? "selected" : "")}>${escapeHtml(option.label)}</option>`).join("");
                 const activationOptions = [
                     { value: "t0", label: "0 Tour (Instantane)" },
                     { value: "t1", label: "1 Tour" },
@@ -2497,7 +2509,7 @@
                     { value: "t3", label: "3 Tours" },
                     { value: "t4", label: "4 Tours" },
                     { value: "t5", label: "5 Tours" }
-                ].map((option) => `<option value="${option.value}" ${option.value === cap.activationTime ? "selected" : ""}>${option.label}</option>`).join("");
+                ].map((option) => `<option value="${escapeHtml(option.value)}" ${escapeHtml(option.value === cap.activationTime ? "selected" : "")}>${escapeHtml(option.label)}</option>`).join("");
                 const durationOptions = [
                     { value: "t0", label: "0 Tour (Instantane)" },
                     { value: "t1", label: "1 Tour" },
@@ -2505,7 +2517,7 @@
                     { value: "t3", label: "3 Tours" },
                     { value: "t4", label: "4 Tours" },
                     { value: "t5", label: "5 Tours" }
-                ].map((option) => `<option value="${option.value}" ${option.value === cap.duration ? "selected" : ""}>${option.label}</option>`).join("");
+                ].map((option) => `<option value="${escapeHtml(option.value)}" ${escapeHtml(option.value === cap.duration ? "selected" : "")}>${escapeHtml(option.label)}</option>`).join("");
                 const cooldownOptions = [
                     { value: "t0", label: "0 Tour (Instantane)" },
                     { value: "t1", label: "1 Tour" },
@@ -2518,7 +2530,7 @@
                     { value: "combat1", label: "1 Utilisation par combat" },
                     { value: "combat2", label: "2 Utilisations par combat" },
                     { value: "combat3", label: "3 Utilisations par combat" }
-                ].map((option) => `<option value="${option.value}" ${option.value === cap.cooldown ? "selected" : ""}>${option.label}</option>`).join("");
+                ].map((option) => `<option value="${escapeHtml(option.value)}" ${escapeHtml(option.value === cap.cooldown ? "selected" : "")}>${escapeHtml(option.label)}</option>`).join("");
                 const nextLevel = level + 1;
                 const costLabel = ascensionCost == null
                     ? "Indisponible"
@@ -2534,28 +2546,28 @@
                     || currentPage?.fields?.magicSpecialization === "eater";
                 const upgradesSection = showUpgrades ? `
                         <div class="magic-capacity-actions">
-                            <button type="button" class="magic-btn magic-btn-outline tw-press${canEditCapacity ? "" : " is-disabled"}" data-upgrade="${cap.id}" ${canEditCapacity ? "" : "disabled"}>Améliorer</button>
+                            <button type="button" class="magic-btn magic-btn-outline tw-press${escapeHtml(canEditCapacity ? "" : " is-disabled")}" data-upgrade="${escapeHtml(cap.id)}" ${escapeHtml(canEditCapacity ? "" : "disabled")}>Améliorer</button>
                         </div>
-                        <div class="magic-capacity-upgrade-form" data-upgrade-form="${cap.id}" hidden>
+                        <div class="magic-capacity-upgrade-form" data-upgrade-form="${escapeHtml(cap.id)}" hidden>
                             <details class="magic-accordion" open>
                                 <summary>Identite du sort</summary>
                                 <div class="magic-accordion-body">
                                     <div class="magic-capacity-upgrade-grid">
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeName-${cap.id}">Nom
-                                            <input id="magicUpgradeName-${cap.id}" class="magic-input tw-input" type="text" value="${cap.name}">
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeName-${escapeHtml(cap.id)}">Nom
+                                            <input id="magicUpgradeName-${escapeHtml(cap.id)}" class="magic-input tw-input" type="text" value="${escapeHtml(cap.name)}">
                                         </label>
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeSummary-${cap.id}">Apercu
-                                            <input id="magicUpgradeSummary-${cap.id}" class="magic-input tw-input" type="text" value="${cap.summary || ""}">
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeSummary-${escapeHtml(cap.id)}">Apercu
+                                            <input id="magicUpgradeSummary-${escapeHtml(cap.id)}" class="magic-input tw-input" type="text" value="${escapeHtml(cap.summary || "")}">
                                         </label>
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeType-${cap.id}">Type
-                                            <select id="magicUpgradeType-${cap.id}" class="magic-input tw-input">${typeOptions}</select>
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeType-${escapeHtml(cap.id)}">Type
+                                            <select id="magicUpgradeType-${escapeHtml(cap.id)}" class="magic-input tw-input">${typeOptions}</select>
                                         </label>
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeRank-${cap.id}">Rang
-                                            <select id="magicUpgradeRank-${cap.id}" class="magic-input tw-input">${rankOptions}</select>
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeRank-${escapeHtml(cap.id)}">Rang
+                                            <select id="magicUpgradeRank-${escapeHtml(cap.id)}" class="magic-input tw-input">${rankOptions}</select>
                                         </label>
                                     </div>
-                                    <label class="magic-label magic-upgrade-field" for="magicUpgradeNote-${cap.id}">Note d'amélioration
-                                        <textarea id="magicUpgradeNote-${cap.id}" class="magic-input tw-input--textarea tw-input" rows="2" placeholder="Ajoutez un rappel de l'amélioration (optionnel)."></textarea>
+                                    <label class="magic-label magic-upgrade-field" for="magicUpgradeNote-${escapeHtml(cap.id)}">Note d'amélioration
+                                        <textarea id="magicUpgradeNote-${escapeHtml(cap.id)}" class="magic-input tw-input--textarea tw-input" rows="2" placeholder="Ajoutez un rappel de l'amélioration (optionnel)."></textarea>
                                     </label>
                                 </div>
                             </details>
@@ -2563,17 +2575,17 @@
                                 <summary>Portee &amp; zone</summary>
                                 <div class="magic-accordion-body">
                                     <div class="magic-capacity-upgrade-grid">
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeTarget-${cap.id}">Ciblage
-                                            <select id="magicUpgradeTarget-${cap.id}" class="magic-input tw-input">${targetOptions}</select>
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeTarget-${escapeHtml(cap.id)}">Ciblage
+                                            <select id="magicUpgradeTarget-${escapeHtml(cap.id)}" class="magic-input tw-input">${targetOptions}</select>
                                         </label>
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeZone-${cap.id}">Type de zone
-                                            <select id="magicUpgradeZone-${cap.id}" class="magic-input tw-input">${zoneOptions}</select>
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeZone-${escapeHtml(cap.id)}">Type de zone
+                                            <select id="magicUpgradeZone-${escapeHtml(cap.id)}" class="magic-input tw-input">${zoneOptions}</select>
                                         </label>
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeDistance-${cap.id}">Distance
-                                            <select id="magicUpgradeDistance-${cap.id}" class="magic-input tw-input">${distanceOptions}</select>
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeDistance-${escapeHtml(cap.id)}">Distance
+                                            <select id="magicUpgradeDistance-${escapeHtml(cap.id)}" class="magic-input tw-input">${distanceOptions}</select>
                                         </label>
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeZoneDetail-${cap.id}">Precision
-                                            <input id="magicUpgradeZoneDetail-${cap.id}" class="magic-input tw-input" type="text" value="${cap.zoneDetail || ""}">
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeZoneDetail-${escapeHtml(cap.id)}">Precision
+                                            <input id="magicUpgradeZoneDetail-${escapeHtml(cap.id)}" class="magic-input tw-input" type="text" value="${escapeHtml(cap.zoneDetail || "")}">
                                         </label>
                                     </div>
                                 </div>
@@ -2582,14 +2594,14 @@
                                 <summary>Temporalite</summary>
                                 <div class="magic-accordion-body">
                                     <div class="magic-capacity-upgrade-grid">
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeActivation-${cap.id}">Activation
-                                            <select id="magicUpgradeActivation-${cap.id}" class="magic-input tw-input">${activationOptions}</select>
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeActivation-${escapeHtml(cap.id)}">Activation
+                                            <select id="magicUpgradeActivation-${escapeHtml(cap.id)}" class="magic-input tw-input">${activationOptions}</select>
                                         </label>
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeDuration-${cap.id}">Temps actif
-                                            <select id="magicUpgradeDuration-${cap.id}" class="magic-input tw-input">${durationOptions}</select>
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeDuration-${escapeHtml(cap.id)}">Temps actif
+                                            <select id="magicUpgradeDuration-${escapeHtml(cap.id)}" class="magic-input tw-input">${durationOptions}</select>
                                         </label>
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeCooldown-${cap.id}">Recharge
-                                            <select id="magicUpgradeCooldown-${cap.id}" class="magic-input tw-input">${cooldownOptions}</select>
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeCooldown-${escapeHtml(cap.id)}">Recharge
+                                            <select id="magicUpgradeCooldown-${escapeHtml(cap.id)}" class="magic-input tw-input">${cooldownOptions}</select>
                                         </label>
                                     </div>
                                 </div>
@@ -2597,26 +2609,26 @@
                             <details class="magic-accordion">
                                 <summary>Effets &amp; equilibre</summary>
                                 <div class="magic-accordion-body">
-                                    <label class="magic-label magic-upgrade-field" for="magicUpgradeEffect-${cap.id}">Effet mecanique
-                                        <textarea id="magicUpgradeEffect-${cap.id}" class="magic-input tw-input--textarea tw-input" rows="2">${cap.effect || ""}</textarea>
+                                    <label class="magic-label magic-upgrade-field" for="magicUpgradeEffect-${escapeHtml(cap.id)}">Effet mecanique
+                                        <textarea id="magicUpgradeEffect-${escapeHtml(cap.id)}" class="magic-input tw-input--textarea tw-input" rows="2">${escapeHtml(cap.effect || "")}</textarea>
                                     </label>
-                                    <label class="magic-label magic-upgrade-field" for="magicUpgradeConditions-${cap.id}">Conditions
-                                        <textarea id="magicUpgradeConditions-${cap.id}" class="magic-input tw-input--textarea tw-input" rows="2">${cap.conditions || ""}</textarea>
+                                    <label class="magic-label magic-upgrade-field" for="magicUpgradeConditions-${escapeHtml(cap.id)}">Conditions
+                                        <textarea id="magicUpgradeConditions-${escapeHtml(cap.id)}" class="magic-input tw-input--textarea tw-input" rows="2">${escapeHtml(cap.conditions || "")}</textarea>
                                     </label>
                                     <div class="magic-capacity-upgrade-grid">
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeStrengths-${cap.id}">Forces
-                                            <textarea id="magicUpgradeStrengths-${cap.id}" class="magic-input tw-input--textarea tw-input" rows="2">${cap.strengths || ""}</textarea>
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeStrengths-${escapeHtml(cap.id)}">Forces
+                                            <textarea id="magicUpgradeStrengths-${escapeHtml(cap.id)}" class="magic-input tw-input--textarea tw-input" rows="2">${escapeHtml(cap.strengths || "")}</textarea>
                                         </label>
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeWeaknesses-${cap.id}">Faiblesses
-                                            <textarea id="magicUpgradeWeaknesses-${cap.id}" class="magic-input tw-input--textarea tw-input" rows="2">${cap.weaknesses || ""}</textarea>
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeWeaknesses-${escapeHtml(cap.id)}">Faiblesses
+                                            <textarea id="magicUpgradeWeaknesses-${escapeHtml(cap.id)}" class="magic-input tw-input--textarea tw-input" rows="2">${escapeHtml(cap.weaknesses || "")}</textarea>
                                         </label>
                                     </div>
                                     <div class="magic-capacity-upgrade-grid">
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeCost-${cap.id}">Coût
-                                            <input id="magicUpgradeCost-${cap.id}" class="magic-input tw-input" type="text" value="${cap.cost || ""}">
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeCost-${escapeHtml(cap.id)}">Coût
+                                            <input id="magicUpgradeCost-${escapeHtml(cap.id)}" class="magic-input tw-input" type="text" value="${escapeHtml(cap.cost || "")}">
                                         </label>
-                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeLimits-${cap.id}">Limites
-                                            <input id="magicUpgradeLimits-${cap.id}" class="magic-input tw-input" type="text" value="${cap.limits || ""}">
+                                        <label class="magic-label magic-upgrade-field" for="magicUpgradeLimits-${escapeHtml(cap.id)}">Limites
+                                            <input id="magicUpgradeLimits-${escapeHtml(cap.id)}" class="magic-input tw-input" type="text" value="${escapeHtml(cap.limits || "")}">
                                         </label>
                                     </div>
                                 </div>
@@ -2624,34 +2636,34 @@
                             <details class="magic-accordion">
                                 <summary>RP &amp; lisibilite adverse</summary>
                                 <div class="magic-accordion-body">
-                                    <label class="magic-label magic-upgrade-field" for="magicUpgradeRp-${cap.id}">Description RP
-                                        <textarea id="magicUpgradeRp-${cap.id}" class="magic-input tw-input--textarea tw-input" rows="2">${cap.rp || ""}</textarea>
+                                    <label class="magic-label magic-upgrade-field" for="magicUpgradeRp-${escapeHtml(cap.id)}">Description RP
+                                        <textarea id="magicUpgradeRp-${escapeHtml(cap.id)}" class="magic-input tw-input--textarea tw-input" rows="2">${escapeHtml(cap.rp || "")}</textarea>
                                     </label>
-                                    <label class="magic-label magic-upgrade-field" for="magicUpgradePerception-${cap.id}">Apercu perceptif
-                                        <textarea id="magicUpgradePerception-${cap.id}" class="magic-input tw-input--textarea tw-input" rows="2">${cap.perception || ""}</textarea>
+                                    <label class="magic-label magic-upgrade-field" for="magicUpgradePerception-${escapeHtml(cap.id)}">Apercu perceptif
+                                        <textarea id="magicUpgradePerception-${escapeHtml(cap.id)}" class="magic-input tw-input--textarea tw-input" rows="2">${escapeHtml(cap.perception || "")}</textarea>
                                     </label>
-                                    <label class="magic-label magic-upgrade-field" for="magicUpgradeTell-${cap.id}">Lisibilite adverse
-                                        <textarea id="magicUpgradeTell-${cap.id}" class="magic-input tw-input--textarea tw-input" rows="2">${cap.tell || ""}</textarea>
+                                    <label class="magic-label magic-upgrade-field" for="magicUpgradeTell-${escapeHtml(cap.id)}">Lisibilite adverse
+                                        <textarea id="magicUpgradeTell-${escapeHtml(cap.id)}" class="magic-input tw-input--textarea tw-input" rows="2">${escapeHtml(cap.tell || "")}</textarea>
                                     </label>
                                 </div>
                             </details>
                             ${isAdmin ? `
-                                <label class="magic-label" for="magicUpgradeAdmin-${cap.id}">Note admin</label>
-                                <textarea id="magicUpgradeAdmin-${cap.id}" class="magic-input tw-input--textarea tw-input" rows="2">${cap.adminNote || ""}</textarea>
+                                <label class="magic-label" for="magicUpgradeAdmin-${escapeHtml(cap.id)}">Note admin</label>
+                                <textarea id="magicUpgradeAdmin-${escapeHtml(cap.id)}" class="magic-input tw-input--textarea tw-input" rows="2">${escapeHtml(cap.adminNote || "")}</textarea>
                             ` : ""}
                             <div class="magic-capacity-form-actions">
-                                <button type="button" class="magic-btn magic-btn-outline tw-press" data-upgrade-cancel="${cap.id}">Annuler</button>
-                                <button type="button" class="magic-btn magic-btn-primary tw-press" data-upgrade-save="${cap.id}">Valider</button>
+                                <button type="button" class="magic-btn magic-btn-outline tw-press" data-upgrade-cancel="${escapeHtml(cap.id)}">Annuler</button>
+                                <button type="button" class="magic-btn magic-btn-primary tw-press" data-upgrade-save="${escapeHtml(cap.id)}">Valider</button>
                             </div>
                         </div>
-                        <div class="magic-capacity-history" data-history-panel="${cap.id}">
+                        <div class="magic-capacity-history" data-history-panel="${escapeHtml(cap.id)}">
                             <div class="magic-capacity-field-label">Niveaux precedents</div>
                             ${historyHtml}
                         </div>
                     `
                     : "";
                 const levelTag = showUpgrades
-                    ? `<span class="magic-tag magic-tag--level" data-history="${cap.id}" role="button" tabindex="0">Niveau ${level}</span>`
+                    ? `<span class="magic-tag magic-tag--level" data-history="${escapeHtml(cap.id)}" role="button" tabindex="0">Niveau ${escapeHtml(level)}</span>`
                     : "";
                 const li = document.createElement("li");
                 li.className = "magic-capacity-item";
@@ -2661,13 +2673,13 @@
                 li.innerHTML = `
                     <button type="button" class="magic-capacity-header" aria-expanded="false">
                         <div class="magic-capacity-main">
-                            <span class="magic-capacity-name">${cap.name}</span>
-                            <span class="magic-capacity-meta">${cap.type.charAt(0).toUpperCase() + cap.type.slice(1)} • ${cap.rank} • Niv. ${level}</span>
+                            <span class="magic-capacity-name">${escapeHtml(cap.name)}</span>
+                            <span class="magic-capacity-meta">${escapeHtml(cap.type.charAt(0).toUpperCase() + cap.type.slice(1))} • ${escapeHtml(cap.rank)} • Niv. ${escapeHtml(level)}</span>
                             <div class="magic-capacity-tags">
-                                ${cap.stats.map((s) => `<span class="magic-tag">${s}</span>`).join("")}
-                                ${capTags.map((tag) => `<span class="magic-tag">${tag}</span>`).join("")}
-                                <span class="magic-tag magic-tag--rank">${cap.rank}</span>
-                                ${levelTag}
+                                ${cap.stats.map((s) => `<span class="magic-tag">${escapeHtml(s)}</span>`).join("")}
+                                ${capTags.map((tag) => `<span class="magic-tag">${escapeHtml(tag)}</span>`).join("")}
+                                <span class="magic-tag magic-tag--rank">${escapeHtml(cap.rank)}</span>
+                                ${escapeHtml(levelTag)}
                             </div>
                         </div>
                         <span class="magic-capacity-toggle">▾</span>
@@ -2675,60 +2687,60 @@
                     <div class="magic-capacity-body">
                         <div>
                             <div class="magic-capacity-field-label">Apercu</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${cap.summary || "-"}</div>
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(cap.summary || "-")}</div>
                         </div>
                         <div>
                             <div class="magic-capacity-field-label">Portee &amp; zone</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${CAPACITY_TARGET_LABELS[cap.target] || cap.target || "-"}${cap.zoneType ? ` • ${CAPACITY_ZONE_LABELS[cap.zoneType] || cap.zoneType}` : ""}${cap.distance ? ` • ${CAPACITY_DISTANCE_LABELS[cap.distance] || cap.distance}` : ""}</div>
-                            ${cap.zoneDetail ? `<div class="magic-capacity-field-value magic-capacity-field-value--dim">${cap.zoneDetail}</div>` : ""}
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(CAPACITY_TARGET_LABELS[cap.target] || cap.target || "-")}${escapeHtml(cap.zoneType ? ` • ${CAPACITY_ZONE_LABELS[cap.zoneType] || cap.zoneType}` : "")}${escapeHtml(cap.distance ? ` • ${CAPACITY_DISTANCE_LABELS[cap.distance] || cap.distance}` : "")}</div>
+                            ${cap.zoneDetail ? `<div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(cap.zoneDetail)}</div>` : ""}
                         </div>
                         <div>
                             <div class="magic-capacity-field-label">Temporalite</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${CAPACITY_TEMPORALITY_LABELS[cap.activationTime] || cap.activationTime || "-"} • ${CAPACITY_TEMPORALITY_LABELS[cap.duration] || cap.duration || "-"} • ${CAPACITY_TEMPORALITY_LABELS[cap.cooldown] || cap.cooldown || "-"}</div>
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(CAPACITY_TEMPORALITY_LABELS[cap.activationTime] || cap.activationTime || "-")} • ${escapeHtml(CAPACITY_TEMPORALITY_LABELS[cap.duration] || cap.duration || "-")} • ${escapeHtml(CAPACITY_TEMPORALITY_LABELS[cap.cooldown] || cap.cooldown || "-")}</div>
                         </div>
                         <div>
                             <div class="magic-capacity-field-label">Description RP</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${cap.rp}</div>
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(cap.rp)}</div>
                         </div>
                         <div>
                             <div class="magic-capacity-field-label">Apercu perceptif</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${cap.perception || "-"}</div>
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(cap.perception || "-")}</div>
                         </div>
                         <div>
                             <div class="magic-capacity-field-label">Lisibilite adverse</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${cap.tell || "-"}</div>
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(cap.tell || "-")}</div>
                         </div>
                         <div>
                             <div class="magic-capacity-field-label">Effet mécanique</div>
-                            <div class="magic-capacity-field-value">${cap.effect}</div>
+                            <div class="magic-capacity-field-value">${escapeHtml(cap.effect)}</div>
                         </div>
                         <div>
                             <div class="magic-capacity-field-label">Conditions</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${cap.conditions || "-"}</div>
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(cap.conditions || "-")}</div>
                         </div>
                         <div>
                             <div class="magic-capacity-field-label">Forces</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${cap.strengths || "-"}</div>
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(cap.strengths || "-")}</div>
                         </div>
                         <div>
                             <div class="magic-capacity-field-label">Faiblesses</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${cap.weaknesses || "-"}</div>
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(cap.weaknesses || "-")}</div>
                         </div>
                         <div>
                             <div class="magic-capacity-field-label">Coût</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${cap.cost}</div>
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(cap.cost)}</div>
                         </div>
                         <div>
                             <div class="magic-capacity-field-label">Limites / conditions</div>
-                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${cap.limits || "-"}</div>
+                            <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(cap.limits || "-")}</div>
                         </div>
                         ${isAdmin ? `
                             <div>
                                 <div class="magic-capacity-field-label">Note admin</div>
-                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${cap.adminNote || "Aucune note."}</div>
+                                <div class="magic-capacity-field-value magic-capacity-field-value--dim">${escapeHtml(cap.adminNote || "Aucune note.")}</div>
                             </div>
                         ` : ""}
-                        ${upgradesSection}
+                        ${escapeHtml(upgradesSection)}
                     </div>
                 `;
 
@@ -3075,9 +3087,9 @@
                 card.setAttribute("role", "button");
                 card.setAttribute("tabindex", "0");
                 card.innerHTML = `
-                    <div class="magic-element-emoji">${magic.emoji}</div>
-                    <div class="magic-element-name">${magic.label}</div>
-                    <div class="magic-element-type">${magic.sourceLabel}</div>
+                    <div class="magic-element-emoji">${escapeHtml(magic.emoji)}</div>
+                    <div class="magic-element-name">${escapeHtml(magic.label)}</div>
+                    <div class="magic-element-type">${escapeHtml(magic.sourceLabel)}</div>
                 `;
                 card.addEventListener("click", () => {
                     window.selectMagicElement(magic.key, magic.label);

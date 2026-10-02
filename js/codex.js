@@ -1,11 +1,16 @@
 ﻿// On rÃ©cupÃ¨re les donnÃ©es depuis data.js (inventoryData)
 // Safe sanitizer wrapper with fallback
+// Plain text (names, labels, URLs) inserted into HTML templates: escape it,
+// including quotes for attribute values. Never returns raw input.
 function clean(value) {
-    if (window.sanitizer?.clean) {
-        return window.sanitizer.clean(value);
-    }
-    // Fallback: return value as-is if sanitizer not loaded
-    return String(value || '');
+    if (!value) return ''; // same as before for empty values and 0
+    if (window.sanitizer?.escapeHtml) return window.sanitizer.escapeHtml(value);
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 window.astoriaIsAdmin = false;
