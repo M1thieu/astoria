@@ -252,7 +252,7 @@ async function run() {
       const routes = await import("../config/routes.js");
       window.location.href = routes.getRouteHref("login");
     } catch {
-      window.location.href = "login.html";
+      window.location.href = "html/login.html";
     }
   });
 

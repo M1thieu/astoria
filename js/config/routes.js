@@ -5,18 +5,18 @@ const ROUTE_DEFINITIONS = Object.freeze({
     label: "Accueil",
     note: "Alias temporaire vers le hub personnages tant que le site public dedie n'est pas en ligne.",
   },
-  login: { path: "login.html", area: "public", label: "Connexion" },
+  login: { path: "html/login.html", area: "public", label: "Connexion" },
   characterHub: { path: "index.html", area: "app", label: "Selection personnage" },
-  profile: { path: "profil.html", area: "app", label: "Profil" },
-  characterSheet: { path: "fiche.html", area: "app", label: "Personnage" },
-  inventory: { path: "inventaire.html", area: "app", label: "Inventaire" },
-  skills: { path: "competences.html", area: "app", label: "Competences" },
-  market: { path: "hdv.html", area: "app", label: "Hotel de vente" },
-  quests: { path: "quetes.html", area: "app", label: "Quetes" },
-  magic: { path: "magie.html", area: "app", label: "Magie" },
-  craft: { path: "craft.html", area: "app", label: "Craft" },
-  nokorah: { path: "nokorah.html", area: "app", label: "Nokorah" },
-  codex: { path: "codex.html", area: "app", label: "Codex" },
+  profile: { path: "html/profil.html", area: "app", label: "Profil" },
+  characterSheet: { path: "html/fiche.html", area: "app", label: "Personnage" },
+  inventory: { path: "html/inventaire.html", area: "app", label: "Inventaire" },
+  skills: { path: "html/competences.html", area: "app", label: "Competences" },
+  market: { path: "html/hdv.html", area: "app", label: "Hotel de vente" },
+  quests: { path: "html/quetes.html", area: "app", label: "Quetes" },
+  magic: { path: "html/magie.html", area: "app", label: "Magie" },
+  craft: { path: "html/craft.html", area: "app", label: "Craft" },
+  nokorah: { path: "html/nokorah.html", area: "app", label: "Nokorah" },
+  codex: { path: "html/codex.html", area: "app", label: "Codex" },
   admin: { path: "admin/index.html", area: "admin", label: "Admin" },
   publicUniverse: { path: "univers.html", area: "public", label: "Univers" },
   publicKingdoms: { path: "royaumes.html", area: "public", label: "Royaumes" },
@@ -54,10 +54,13 @@ function getCurrentHref() {
 function getProjectBaseUrl(from = getCurrentHref()) {
   const currentUrl = from instanceof URL ? from : new URL(from, getCurrentHref());
   const normalizedPath = String(currentUrl.pathname || "/").replace(/\\/g, "/");
-  const adminMarker = "/admin/";
-  const adminIndex = normalizedPath.indexOf(adminMarker);
-  const basePath = adminIndex >= 0
-    ? normalizedPath.slice(0, adminIndex + 1)
+  // Pages in these sub-folders resolve routes from the project root.
+  const folderMarkers = ["/admin/", "/html/"];
+  const markerIndex = folderMarkers
+    .map((marker) => normalizedPath.lastIndexOf(marker))
+    .reduce((best, index) => Math.max(best, index), -1);
+  const basePath = markerIndex >= 0
+    ? normalizedPath.slice(0, markerIndex + 1)
     : normalizedPath.slice(0, normalizedPath.lastIndexOf("/") + 1);
   return new URL(basePath || "/", currentUrl);
 }

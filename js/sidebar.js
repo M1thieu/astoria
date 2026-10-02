@@ -35,17 +35,17 @@
 
   const fallbackRoutes = {
     characterHub: "index.html",
-    login: "login.html",
+    login: "html/login.html",
     admin: "admin/index.html",
-    codex: "codex.html",
-    skills: "competences.html",
-    market: "hdv.html",
-    inventory: "inventaire.html",
-    quests: "quetes.html",
-    magic: "magie.html",
-    craft: "craft.html",
-    nokorah: "nokorah.html",
-    characterSheet: "fiche.html",
+    codex: "html/codex.html",
+    skills: "html/competences.html",
+    market: "html/hdv.html",
+    inventory: "html/inventaire.html",
+    quests: "html/quetes.html",
+    magic: "html/magie.html",
+    craft: "html/craft.html",
+    nokorah: "html/nokorah.html",
+    characterSheet: "html/fiche.html",
   };
 
   const fallbackItems = [

@@ -1582,7 +1582,7 @@ void (async () => {
             const routes = await import('./config/routes.js');
             window.location.href = routes.getRouteHref('inventory');
         } catch {
-            window.location.href = 'inventaire.html';
+            window.location.href = 'html/inventaire.html';
         }
         return;
     }

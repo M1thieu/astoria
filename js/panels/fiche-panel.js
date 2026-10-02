@@ -3,7 +3,7 @@ import { el } from "./panel-utils.js";
 export const fichePanel = {
   id: "fiche",
   title: "Fiche personnage",
-  fullPageHref: "fiche.html",
+  fullPageHref: "html/fiche.html",
   fullPageLabel: "Ouvrir la fiche",
   renderPanel(ctx) {
     const wrapper = el("div", "panel-card");

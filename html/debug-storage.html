@@ -2,6 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <!-- Pages live in html/: resolve every relative URL from the site root. -->
+    <base href="../">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diagnostic localStorage - Astoria</title>
     <style>
@@ -103,8 +105,8 @@
     <div class="panel tw-surface">
         <h2>Actions</h2>
         <button onclick="window.location.href='index.html'" class="tw-press">Aller à index.html</button>
-        <button onclick="window.location.href='hdv.html'" class="tw-press">Aller à hdv.html</button>
-        <button onclick="window.location.href='profil.html'" class="tw-press">Aller à profil.html</button>
+        <button onclick="window.location.href='html/hdv.html'" class="tw-press">Aller à hdv.html</button>
+        <button onclick="window.location.href='html/profil.html'" class="tw-press">Aller à profil.html</button>
         <button onclick="window.location.reload()" class="tw-press">Recharger</button>
     </div>
     <script type="module">

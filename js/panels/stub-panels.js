@@ -203,7 +203,7 @@ function formatRarity(value) {
 export const hdvPanel = {
   id: "hdv",
   title: "Hotel de vente",
-  fullPageHref: "hdv.html",
+  fullPageHref: "html/hdv.html",
   fullPageLabel: "Ouvrir le marche",
   renderPanel(ctx) {
     const wrapper = el("div", "panel-card");
