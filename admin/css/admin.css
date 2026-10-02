@@ -1537,3 +1537,224 @@ body.perf-lite .btn::before {
 [data-page="quetes"] th.sortable:hover {
     color: #ff77b4;
 }
+
+/* =================================================================
+   DASHBOARD LAYOUT
+   ================================================================= */
+/* Stat cards share one line whatever their count (no orphan 5th card). */
+.admin-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 16px;
+    margin: 0 0 1.5rem;
+}
+
+.admin-stats > [class*="col-"] {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Labels wrap between words, never mid-word ("UTILISATEUR / S"). */
+.admin-stats .text-muted {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: manual;
+}
+
+.admin-stats .card-body {
+    padding-inline: 14px;
+}
+
+.card-sm[data-nav]:focus-visible,
+.admin-quick-actions .btn:focus-visible {
+    outline: 3px solid rgba(244, 143, 177, 0.55);
+    outline-offset: 2px;
+}
+
+/* Quick action labels wrap instead of being cut. */
+[data-page="dashboard"] .card-body .row.g-2 .btn {
+    min-height: 44px;
+    white-space: normal;
+    line-height: 1.2;
+}
+
+@media (max-width: 575.98px) {
+    .admin-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .admin-stats .card-body {
+        padding: 12px;
+    }
+
+    .admin-stats > :last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+
+    .admin-stats .avatar {
+        --tblr-avatar-size: 2.25rem;
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+
+    .page-header .row {
+        gap: 10px;
+    }
+
+    .page-header .col-auto.ms-auto {
+        margin-left: 0 !important;
+        width: 100%;
+    }
+
+    .page-header .btn-list {
+        justify-content: space-between;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-page.active {
+        animation: none;
+    }
+
+    .btn,
+    .card,
+    .nav-link {
+        transition: none !important;
+    }
+}
+
+/* =================================================================
+   COMMAND PALETTE (Ctrl+K)
+   ================================================================= */
+.admin-palette {
+    width: min(560px, calc(100vw - 32px));
+    margin: 12vh auto auto;
+    padding: 0;
+    border: 1px solid var(--admin-border);
+    border-radius: 16px;
+    background: #231832;
+    color: #f5e9f0;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.admin-palette::backdrop {
+    background: rgba(10, 6, 16, 0.6);
+    backdrop-filter: blur(3px);
+}
+
+.admin-palette-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--admin-border);
+    color: #f48fb1;
+}
+
+.admin-palette-search input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 1rem;
+}
+
+.admin-palette-search input::-webkit-search-cancel-button {
+    display: none;
+}
+
+.admin-palette kbd,
+.admin-palette-hint kbd {
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(244, 143, 177, 0.3);
+    background: rgba(244, 143, 177, 0.08);
+    color: #f8bbd0;
+    font-size: 0.7rem;
+    font-family: inherit;
+    box-shadow: none;
+}
+
+.admin-palette-list {
+    max-height: min(360px, 55vh);
+    margin: 0;
+    padding: 6px;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.admin-palette-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.admin-palette-item span {
+    font-size: 0.8rem;
+    color: rgba(245, 233, 240, 0.6);
+}
+
+.admin-palette-item[aria-selected="true"] {
+    background: rgba(210, 75, 143, 0.2);
+    box-shadow: inset 3px 0 0 #f48fb1;
+}
+
+.admin-palette-empty {
+    padding: 16px 12px;
+    color: rgba(245, 233, 240, 0.6);
+}
+
+.admin-palette-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+@media (max-width: 575.98px) {
+    .admin-palette-hint span,
+    .admin-palette-hint kbd {
+        display: none;
+    }
+}
+
+/* =================================================================
+   PHONES: card headers and button groups wrap instead of overflowing
+   ================================================================= */
+@media (max-width: 575.98px) {
+    .admin-page .card-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .admin-page .card-header .card-actions {
+        flex-wrap: wrap;
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .admin-page .btn-group {
+        flex-wrap: wrap;
+    }
+
+    .admin-page .btn-group > .btn {
+        flex: 1 1 auto;
+    }
+
+    /* Wide tables scroll inside their card, not the whole page. */
+    .admin-page .card:has(> .table),
+    .admin-page .card:has(> div > .table) {
+        overflow-x: auto;
+    }
+}
