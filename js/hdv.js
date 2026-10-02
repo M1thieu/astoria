@@ -1639,6 +1639,7 @@ function renderMyListings(listings) {
         const tr = document.createElement('tr');
 
         const tdItem = document.createElement('td');
+        tdItem.classList.add('hdv-td-item');
         tdItem.innerHTML = `
             <div class="hdv-item-cell">
                 <img class="hdv-item-icon" src="${escapeHtml(img)}" alt="">
@@ -1667,6 +1668,7 @@ function renderMyListings(listings) {
         renderPriceCell(listing.unit_price);
 
         const tdAction = document.createElement('td');
+        tdAction.classList.add('hdv-td-action');
 
         const needsSwitch = !state.character || listing.seller_character_id !== state.character.id;
         if (needsSwitch) {
@@ -1843,6 +1845,7 @@ function renderHistory(transactions) {
         tdType.textContent = type;
 
         const tdItem = document.createElement('td');
+        tdItem.classList.add('hdv-td-item');
         tdItem.innerHTML = scrollLabel
             ? `${escapeHtml(itemName)} <span class="hdv-item-meta hdv-item-meta--scroll">${scrollLabel}</span>`
             : escapeHtml(itemName);
@@ -1860,6 +1863,7 @@ function renderHistory(transactions) {
         tdPrice.className = 'hdv-td-price';
 
         const tdProfile = document.createElement('td');
+        tdProfile.classList.add('hdv-td-full');
         const profileId = isBuy ? tx.seller_character_id : tx.buyer_character_id;
         const profileName = isBuy
             ? resolveCharacterName(tx.seller_character)

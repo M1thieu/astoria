@@ -2265,6 +2265,9 @@
 
                 name: 'Kaels',
 
+                // Currency artwork comes from the item catalogue (js/data.js).
+                image: resolveItemByKey('Kaels').item?.image || '',
+
 
 
                 category: 'consommable',
