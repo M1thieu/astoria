@@ -156,11 +156,21 @@ body {
 
 html:not(.nokorah-theme) {
     background-color: var(--color-white);
+}
+
+/* Background art on a fixed, viewport-sized layer: same look as a fixed
+   background, but smooth on mobile (iOS Safari ignores background-attachment:
+   fixed and stretched the image over the whole page height). */
+html:not(.nokorah-theme)::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
     background-image: url('../assets/images/general_background.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    background-attachment: fixed;
+    pointer-events: none;
 }
 
 body:not(.nokorah-theme) {
@@ -190,9 +200,6 @@ body:not(.nokorah-theme) > *:not(.headroom-hamburger):not(.panel-backdrop):not(.
         padding: var(--space-6);
     }
 
-    html:not(.nokorah-theme) {
-        background-attachment: fixed;
-    }
 }
 
 .tw-surface,

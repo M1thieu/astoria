@@ -505,6 +505,10 @@
     background: var(--color-primary-light);
 }
 
+.home-glossary-main {
+    min-height: 60vh; /* filtering never collapses the page under the reader */
+}
+
 .home-count {
     margin: 0 0 12px;
     font-size: var(--text-sm-plus);

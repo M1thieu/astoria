@@ -657,6 +657,12 @@
     min-width: 0;
 }
 
+/* Lists are paginated: let the page scroll instead of a box inside the page. */
+.hdv-page .table-container {
+    max-height: none;
+    overflow-y: visible;
+}
+
 .hdv-page .hdv-th-price {
     text-align: right;
 }

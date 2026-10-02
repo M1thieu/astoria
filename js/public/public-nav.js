@@ -84,6 +84,15 @@ export function initPublicNav() {
     const setOpen = (open) => {
         nav.hidden = !open;
         backdrop.hidden = !open;
+        // The page must not scroll behind the open menu (body-scroll-lock also
+        // handles iOS Safari, which ignores overflow:hidden for touch scrolling).
+        const lock = window.bodyScrollLock;
+        if (lock) {
+            if (open) lock.disableBodyScroll(nav, { reserveScrollBarGap: true });
+            else lock.enableBodyScroll(nav);
+        } else {
+            document.documentElement.style.overflow = open ? 'hidden' : '';
+        }
         toggle.setAttribute('aria-expanded', String(open));
         toggle.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
         if (open) nav.querySelector('a')?.focus();

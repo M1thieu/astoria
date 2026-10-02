@@ -82,6 +82,19 @@ function createGlossary(data) {
     const results = document.getElementById('glossaryResults');
     const count = document.getElementById('glossaryCount');
 
+    // After a filter/search change, keep the top of the results in view instead of
+    // leaving the reader wherever the shorter page happens to end.
+    function keepResultsInView() {
+        const section = document.getElementById('glossaire');
+        const bar = document.querySelector('.home-topbar');
+        if (!section) return;
+        const barBottom = bar ? bar.getBoundingClientRect().bottom : 0;
+        const top = results.getBoundingClientRect().top;
+        if (top < barBottom || top > window.innerHeight) {
+            window.scrollTo({ top: window.scrollY + top - barBottom - 12, behavior: 'auto' });
+        }
+    }
+
     function buildChips(container, options, key) {
         container.innerHTML = '';
         options.forEach(({ value, label }) => {
@@ -93,6 +106,7 @@ function createGlossary(data) {
                 state[key] = value;
                 container.querySelectorAll('.home-chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.value === value)));
                 render();
+                keepResultsInView();
             });
             container.appendChild(chip);
         });
@@ -169,6 +183,7 @@ function createGlossary(data) {
         timer = setTimeout(() => {
             state.query = search.value;
             render();
+            keepResultsInView();
         }, 120);
     });
 
