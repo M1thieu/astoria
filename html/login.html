@@ -283,7 +283,8 @@
                 subtitle.textContent = isRegister ? 'Créez votre compte' : 'Connectez-vous';
                 hideError();
                 try {
-                    history.replaceState(null, '', isRegister ? '#register' : '#login');
+                    // Keep this page's path: with <base href="../"> a bare '#login' would point to the site root.
+                    history.replaceState(null, '', window.location.pathname + window.location.search + (isRegister ? '#register' : '#login'));
                 } catch {
                     // ignore
                 }
@@ -318,7 +319,7 @@
                 : 'Déjà connecté.';
             sessionNotice.hidden = false;
             sessionContinue.addEventListener('click', () => {
-                window.location.href = 'index.html';
+                window.location.href = 'html/personnages.html';
             });
             sessionLogout.addEventListener('click', () => {
                 logout();
@@ -364,7 +365,7 @@
             try {
                 const result = await login(username, password);
                 if (result.success) {
-                    window.location.href = 'index.html';
+                    window.location.href = 'html/personnages.html';
                 } else {
                     showError(result.error || 'Nom d\'utilisateur ou mot de passe incorrect');
                 }
@@ -395,7 +396,7 @@
             try {
                 const result = await register(username, password);
                 if (result.success) {
-                    window.location.href = 'index.html';
+                    window.location.href = 'html/personnages.html';
                 } else {
                     showError(result.error || 'Impossible de créer le compte');
                 }
@@ -483,5 +484,7 @@
             if (registerButton) registerButton.disabled = true;
         })();
     </script>
+    <link rel="stylesheet" href="css/home.css">
+    <script type="module" src="js/public/public-nav.js"></script>
 </body>
 </html>

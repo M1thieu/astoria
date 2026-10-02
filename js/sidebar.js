@@ -34,7 +34,7 @@
   };
 
   const fallbackRoutes = {
-    characterHub: "index.html",
+    characterHub: "html/personnages.html",
     login: "html/login.html",
     admin: "admin/index.html",
     codex: "html/codex.html",

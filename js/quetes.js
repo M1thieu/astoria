@@ -3846,7 +3846,7 @@ function bindEvents() {
             renderQuestList();
         },
     });
-    document.querySelector('a[href="#questHistory"]')?.addEventListener("click", () => {
+    document.querySelector('a[href$="#questHistory"]')?.addEventListener("click", () => {
         void ensureHistoryDataLoaded();
     });
     dom.statusInput.addEventListener("change", () => {

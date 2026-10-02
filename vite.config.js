@@ -36,6 +36,7 @@ export default defineConfig({
                 { src: 'js', dest: '.' },
                 { src: 'css', dest: '.' },
                 { src: 'html', dest: '.' },
+                { src: 'data', dest: '.' },
                 // Redirect stubs for the old root URLs of the game pages
                 { src: 'login.html', dest: '.' },
                 { src: 'profil.html', dest: '.' },
