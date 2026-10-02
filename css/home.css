@@ -954,3 +954,18 @@
 .home-chip--empty:not([aria-pressed="true"]) {
     opacity: 0.6;
 }
+
+/* Day / night / soft switch in the top bar: icon only on small phones. */
+.home-theme-toggle {
+    flex: none;
+}
+
+@media (max-width: 520px) {
+    .home-theme-toggle {
+        padding: 0 5px;
+    }
+
+    .home-theme-toggle .theme-mode-text {
+        display: none;
+    }
+}

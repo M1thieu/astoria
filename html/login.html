@@ -2,6 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <!-- Apply the saved display mode (Nuit / Doux) before the first paint. -->
+    <script>try{var t=localStorage.getItem("astoria_theme");if(t==="dark"||t==="soft")document.documentElement.dataset.theme=t}catch(e){}</script>
     <!-- Pages live in html/: resolve every relative URL from the site root. -->
     <base href="../">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -264,6 +266,7 @@
             <a href="./" data-route="publicHome" data-route-hash="royaumes">Royaumes</a>
             <a href="./" data-route="publicHome" data-route-hash="glossaire">Glossaire</a>
         </nav>
+        <button type="button" class="theme-toggle home-theme-toggle" data-theme-toggle></button>
         <button type="button" class="home-menu-btn" id="publicNavToggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="publicNav">☰</button>
     </header>
     <main class="auth-container">
@@ -578,6 +581,8 @@
         })();
     </script>
     <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/theme-toggle.css">
+    <script src="js/theme-toggle.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/body-scroll-lock@4.0.0-beta.0/lib/bodyScrollLock.min.js"></script>
     <script type="module" src="js/public/public-nav.js"></script>
 </body>
