@@ -1,6 +1,7 @@
 // Public hamburger menu (home and login pages): sections of the home page and
 // the way in, without requiring an account. Links resolve from the site root.
 import { readSession } from '../api/session-store.js';
+import { getRouteHref } from '../config/routes.js';
 
 function isLoggedIn() {
     try {
@@ -10,25 +11,52 @@ function isLoggedIn() {
     }
 }
 
+// <a data-route="key" [data-route-hash="section"]>: href comes from js/config/routes.js.
+function applyRouteLinks(root = document) {
+    root.querySelectorAll('[data-route]').forEach((link) => {
+        const hash = link.dataset.routeHash;
+        link.href = getRouteHref(link.dataset.route, hash ? { hash } : {});
+    });
+}
+
+// Links marked data-account-link lead to login, or to the characters when logged in.
+function syncAccountLinks(loggedIn) {
+    if (!loggedIn) return;
+    document.querySelectorAll('[data-account-link]').forEach((link) => {
+        link.dataset.route = 'characterHub';
+        if (!link.hasAttribute('data-account-card')) link.textContent = 'Mes personnages';
+    });
+    document.querySelectorAll('[data-account-title]').forEach((node) => { node.textContent = 'Mes personnages'; });
+    document.querySelectorAll('[data-account-text]').forEach((node) => { node.textContent = 'Reprendre le jeu avec ton personnage.'; });
+}
+
 export function initPublicNav() {
-    if (document.querySelector('.public-nav-toggle')) return;
+    if (document.getElementById('publicNav')) return;
+    const loggedIn = isLoggedIn();
+    syncAccountLinks(loggedIn);
+    applyRouteLinks();
 
+    // Home page sections (ids of index.html) + the way in, all through routes.js.
     const links = [
-        { href: 'index.html#haut', label: 'Accueil' },
-        { href: 'index.html#royaumes', label: 'Royaumes' },
-        { href: 'index.html#glossaire', label: 'Glossaire' }
+        { href: getRouteHref('publicHome', { hash: 'haut' }), label: 'Accueil' },
+        { href: getRouteHref('publicHome', { hash: 'royaumes' }), label: 'Royaumes' },
+        { href: getRouteHref('publicHome', { hash: 'glossaire' }), label: 'Glossaire' }
     ];
-    const primary = isLoggedIn()
-        ? { href: 'html/personnages.html', label: 'Mes personnages' }
-        : { href: 'html/login.html', label: 'Se connecter' };
+    const primary = loggedIn
+        ? { href: getRouteHref('characterHub'), label: 'Mes personnages' }
+        : { href: getRouteHref('login'), label: 'Se connecter' };
 
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'public-nav-toggle';
-    toggle.setAttribute('aria-label', 'Ouvrir le menu');
-    toggle.setAttribute('aria-expanded', 'false');
-    toggle.setAttribute('aria-controls', 'publicNav');
-    toggle.textContent = '☰';
+    // Reuse the page's own menu button (home top bar) or add a floating one.
+    const existingToggle = document.getElementById('publicNavToggle');
+    const toggle = existingToggle || document.createElement('button');
+    if (!existingToggle) {
+        toggle.type = 'button';
+        toggle.className = 'public-nav-toggle';
+        toggle.setAttribute('aria-label', 'Ouvrir le menu');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-controls', 'publicNav');
+        toggle.textContent = '☰';
+    }
 
     const backdrop = document.createElement('div');
     backdrop.className = 'public-nav-backdrop';
@@ -73,7 +101,8 @@ export function initPublicNav() {
         }
     });
 
-    document.body.append(toggle, backdrop, nav);
+    if (!existingToggle) document.body.append(toggle);
+    document.body.append(backdrop, nav);
 }
 
 initPublicNav();

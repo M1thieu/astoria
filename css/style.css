@@ -9,6 +9,10 @@
     --color-primary-light: #f8bbd0;
     --color-primary-lighter: #fce4ec;
     --color-primary-pale: #e6b7c9;
+    --color-black: #000000;
+    --color-banner-pink: #c64a71; /* matches the band of banner.png / footer.png */
+    --color-primary-glow: color-mix(in srgb, var(--color-primary) 80%, var(--color-white));
+    --color-surface-blush: #fff1f7;
 
     --color-table-header: #f7c3d5;
     --color-table-header-text: #7a1242;

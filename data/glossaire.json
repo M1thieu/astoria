@@ -1,7 +1,7 @@
 {
   "_lisezMoi": [
     "Contenu de la page d'accueil (index.html) : modifie ce fichier, pas le code.",
-    "royaumes : id unique (minuscules, sans espace), nom, position, accroche, description, tags.",
+    "royaumes : id unique (minuscules, sans espace), couleur (facultative), nom, position, accroche, description, tags.",
     "categories : id + libelle, utilisées pour filtrer les termes.",
     "termes : terme, definition, royaume (id d'un royaume ou 'general'), categorie (id), alias (facultatif).",
     "Une definition vide s'affiche comme 'Définition à venir'.",
@@ -17,6 +17,7 @@
   "royaumes": [
     {
       "id": "luminara",
+      "couleur": "#c9a227",
       "nom": "Luminara",
       "position": "Centre",
       "accroche": "Empire central, faste éblouissant et hiérarchies visibles",
@@ -26,6 +27,7 @@
     },
     {
       "id": "sancturia",
+      "couleur": "#8e5bd6",
       "nom": "Sancturia",
       "position": "Ouest",
       "accroche": "Royaume noble, ancien et plus cérémoniel",
@@ -35,6 +37,7 @@
     },
     {
       "id": "ombresyl",
+      "couleur": "#5b2a6e",
       "nom": "Ombresyl",
       "position": "Sud",
       "accroche": "Royaume maudit où le trône doit pouvoir se prendre",

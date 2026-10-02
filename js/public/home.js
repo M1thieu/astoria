@@ -1,6 +1,8 @@
 // Public home page: presentation, kingdoms and glossary from data/glossaire.json.
 // Everything is built with textContent: content is never parsed as HTML.
 
+// Single place for the content file location (edited by the team, see _lisezMoi inside).
+const CONTENT_URL = 'data/glossaire.json';
 const GENERAL = 'general';
 
 const normalize = (value) => String(value || '')
@@ -39,6 +41,7 @@ function renderKingdoms(data, onSelect) {
     (data.royaumes || []).forEach((kingdom) => {
         const card = el('article', 'home-kingdom');
         card.id = `royaume-${kingdom.id}`;
+        if (kingdom.couleur) card.style.setProperty('--kingdom-color', kingdom.couleur);
         if (kingdom.position) card.appendChild(el('span', 'home-kingdom-position', kingdom.position));
         card.appendChild(el('h3', 'home-kingdom-name', kingdom.nom));
         if (kingdom.accroche) card.appendChild(el('p', 'home-kingdom-tagline', kingdom.accroche));
@@ -184,10 +187,13 @@ function createGlossary(data) {
 async function initHome() {
     const status = document.getElementById('glossaryCount');
     try {
-        const response = await fetch('data/glossaire.json', { cache: 'no-cache' });
+        const response = await fetch(CONTENT_URL, { cache: 'no-cache' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         renderPresentation(data);
+        const setStat = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = String(value); };
+        setStat('statKingdoms', (data.royaumes || []).length);
+        setStat('statTerms', (data.termes || []).filter((t) => t && t.terme).length);
         const glossary = createGlossary(data);
         renderKingdoms(data, (id) => glossary.selectKingdom(id));
         // Deep link to a term (index.html#terme-kaels) once rendered
