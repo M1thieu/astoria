@@ -436,6 +436,32 @@ function parsePriceInput(value) {
     return Math.trunc(numberValue);
 }
 
+// Player-provided text (item and character names) must never be parsed as HTML.
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Rarity badge using the shared rarity definitions (js/item-display-meta.js).
+function renderRarityBadge(value) {
+    const meta = window.astoriaItemDisplayMeta?.getRarityMeta?.(value);
+    const badge = document.createElement('span');
+    if (!meta) {
+        badge.className = 'hdv-rarity hdv-rarity--unknown';
+        badge.textContent = String(value || '').trim() || 'Inconnue';
+        return badge;
+    }
+    badge.className = 'hdv-rarity';
+    badge.dataset.rarity = meta.key;
+    badge.style.setProperty('--rarity-color', meta.color);
+    badge.textContent = meta.label;
+    return badge;
+}
+
 function formatKaels(value) {
     const safe = Math.max(0, asInt(value) ?? 0);
     return safe.toLocaleString('fr-FR');
@@ -461,7 +487,7 @@ function formatCharacterLink(characterId, label = '') {
     const shortId = String(characterId).slice(0, 8);
     const text = label || shortId;
     const url = getRouteHref('profile', { query: { character: characterId } });
-    return `<a class="hdv-link" href="${url}" target="_blank" rel="noopener">${text}</a>`;
+    return `<a class="hdv-link" href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`;
 }
 
 function resolveCharacterName(relation) {
@@ -1214,19 +1240,20 @@ function renderListings(listings) {
         const tr = document.createElement('tr');
 
         const tdItem = document.createElement('td');
+        tdItem.className = 'hdv-td-item';
         const metaLines = [];
         const scrollLabel = listing.scroll_type ? getScrollTypeLabel(listing.scroll_type) : '';
         if (scrollLabel) metaLines.push(`<div class="hdv-item-meta hdv-item-meta--scroll">${scrollLabel}</div>`);
-        if (item.category) metaLines.push(`<div class="hdv-item-meta">${categoryLabel(item.category)}</div>`);
+        if (item.category) metaLines.push(`<div class="hdv-item-meta">${escapeHtml(categoryLabel(item.category))}</div>`);
         const sellerName = resolveCharacterName(listing.seller_character) || 'Vendeur';
         if (listing.seller_character_id) {
-            metaLines.push(`<div class="hdv-item-meta">Vendeur: <button type="button" class="hdv-vendor-btn" data-vendor-id="${listing.seller_character_id}" data-vendor-name="${sellerName.replace(/"/g, '&quot;')}">${sellerName}</button></div>`);
+            metaLines.push(`<div class="hdv-item-meta">Vendeur : <button type="button" class="hdv-vendor-btn" data-vendor-id="${escapeHtml(listing.seller_character_id)}" data-vendor-name="${escapeHtml(sellerName)}">${escapeHtml(sellerName)}</button></div>`);
         }
         tdItem.innerHTML = `
             <div class="hdv-item-cell">
-                <img class="hdv-item-icon" src="${img}" alt="">
+                <img class="hdv-item-icon" src="${escapeHtml(img)}" alt="">
                 <div class="hdv-item-text">
-                    <div class="hdv-item-name">${item.name || 'Item inconnu'}</div>
+                    <div class="hdv-item-name">${escapeHtml(item.name || 'Item inconnu')}</div>
                     ${metaLines.join('')}
                 </div>
             </div>
@@ -1243,7 +1270,7 @@ function renderListings(listings) {
         tdLvl.textContent = String(listing.item_level ?? 0);
 
         const tdRarity = document.createElement('td');
-        tdRarity.textContent = String(listing.item_rarity ?? 'Inconnue');
+        tdRarity.appendChild(renderRarityBadge(listing.item_rarity));
 
         const tdLot = document.createElement('td');
         tdLot.textContent = `x${listing.quantity}`;
@@ -1264,6 +1291,7 @@ function renderListings(listings) {
         tdPrice.appendChild(priceCell);
 
         const tdAction = document.createElement('td');
+        tdAction.className = 'hdv-td-action';
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn-primary hdv-action-btn';
@@ -1613,10 +1641,10 @@ function renderMyListings(listings) {
         const tdItem = document.createElement('td');
         tdItem.innerHTML = `
             <div class="hdv-item-cell">
-                <img class="hdv-item-icon" src="${img}" alt="">
+                <img class="hdv-item-icon" src="${escapeHtml(img)}" alt="">
                 <div class="hdv-item-text">
-                    <div class="hdv-item-name">${item.name || 'Item inconnu'}</div>
-                    <div class="hdv-item-meta">${item.category ? categoryLabel(item.category) : ''}</div>
+                    <div class="hdv-item-name">${escapeHtml(item.name || 'Item inconnu')}</div>
+                    <div class="hdv-item-meta">${item.category ? escapeHtml(categoryLabel(item.category)) : ''}</div>
                     ${listing.scroll_type ? `<div class="hdv-item-meta hdv-item-meta--scroll">${getScrollTypeLabel(listing.scroll_type)}</div>` : ''}
                 </div>
             </div>
@@ -1816,8 +1844,8 @@ function renderHistory(transactions) {
 
         const tdItem = document.createElement('td');
         tdItem.innerHTML = scrollLabel
-            ? `${itemName} <span class="hdv-item-meta hdv-item-meta--scroll">${scrollLabel}</span>`
-            : itemName;
+            ? `${escapeHtml(itemName)} <span class="hdv-item-meta hdv-item-meta--scroll">${scrollLabel}</span>`
+            : escapeHtml(itemName);
 
         const tdLot = document.createElement('td');
         tdLot.textContent = `x${tx.quantity}`;
