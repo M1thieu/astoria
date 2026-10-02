@@ -551,12 +551,20 @@
     color: var(--color-gray-700);
 }
 
-.home-letter-group {
-    scroll-margin-top: 80px;
+/* Letter groups flow like a dictionary (down then across): no holes after short letters. */
+#glossaryResults {
+    columns: 260px 3;
+    column-gap: 14px;
 }
 
-.home-letter-group + .home-letter-group {
-    margin-top: 18px;
+#glossaryResults .home-empty {
+    column-span: all;
+}
+
+.home-letter-group {
+    scroll-margin-top: 80px;
+    break-inside: avoid;
+    margin-bottom: 18px;
 }
 
 .home-letter-title {
@@ -570,7 +578,6 @@
 
 .home-terms {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 10px;
 }
 
