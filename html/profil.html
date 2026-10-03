@@ -2,6 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <!-- Apply the saved display mode (Nuit / Doux) before the first paint. -->
+    <script>try{var t=localStorage.getItem("astoria_theme");if(t==="dark"||t==="soft")document.documentElement.dataset.theme=t}catch(e){}</script>
     <!-- Pages live in html/: resolve every relative URL from the site root. -->
     <base href="../">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -196,7 +198,7 @@
                 <section class="profile-section profile-section--presentation tw-panel">
                     <header class="profile-section-header">
                         <div class="profile-section-title-wrap">
-                            <h2 class="profile-section-title">Presentation</h2>
+                            <h2 class="profile-section-title">Présentation</h2>
                         </div>
                         <div class="profile-section-actions">
                             <button type="button" class="profile-edit-btn tw-press" id="presentationEditBtn" hidden>Modifier</button>
@@ -214,7 +216,7 @@
                                 </div>
                             </div>
                             <p class="profile-placeholder-text" id="presentationPlaceholder">
-                                Zone de presentation du joueur et de son personnage. Ajoute du texte, des images et des blocs HTML personnalises.
+                                Zone de présentation du joueur et de son personnage. Ajoute du texte, des images et des blocs HTML personnalisés.
                             </p>
                             <div class="profile-presentation-content" id="presentationContent" hidden></div>
                         </div>
@@ -280,7 +282,7 @@
                                         <span class="profile-sidebar-count" id="presentationCount">0/10</span>
                                     </div>
                                     <div class="profile-presentations-list" id="presentationList"></div>
-                                    <button type="button" class="profile-new-presentation tw-press" id="presentationCreateBtn">+ Nouvelle presentation</button>
+                                    <button type="button" class="profile-new-presentation tw-press" id="presentationCreateBtn">+ Nouvelle présentation</button>
                                     <div class="profile-presentation-custom">
                                         <h4 class="profile-sidebar-title">Personnalisation</h4>
                                         <label class="profile-custom-label" for="presentationHeroTitleInput">Titre</label>
@@ -966,7 +968,7 @@
                 card.innerHTML = `
                     <span class="profile-presentation-indicator" style="background:${escapeAttribute(item.color)}"></span>
                     <div class="profile-presentation-info">
-                        <input class="profile-presentation-name" value="${escapeAttribute(item.name)}" maxlength="30" placeholder="Nommer..." aria-label="Nom de la presentation">
+                        <input class="profile-presentation-name" value="${escapeAttribute(item.name)}" maxlength="30" placeholder="Nommer..." aria-label="Nom de la présentation">
                         ${item.isActive ? '<span class="profile-presentation-badge">ACTIVE</span>' : ''}
                     </div>
                     <div class="profile-presentation-actions">
@@ -1693,7 +1695,7 @@
             const logoutButton = document.createElement('button');
             logoutButton.className = 'auth-button secondary';
             logoutButton.id = 'logoutBtn';
-            logoutButton.textContent = 'Deconnexion';
+            logoutButton.textContent = 'Déconnexion';
             logoutButton.addEventListener('click', () => {
                 logout();
                 window.location.reload();
@@ -1718,7 +1720,7 @@
             if (!isAdmin()) return null;
             const adminSelect = document.createElement('select');
             adminSelect.className = 'character-selector character-selector--admin';
-            adminSelect.setAttribute('aria-label', 'MJ : selectionner un personnage');
+            adminSelect.setAttribute('aria-label', 'MJ : sélectionner un personnage');
             const adminPlaceholder = document.createElement('option');
             adminPlaceholder.value = '';
             adminPlaceholder.textContent = 'MJ: choisir un personnage...';

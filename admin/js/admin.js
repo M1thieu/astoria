@@ -125,12 +125,21 @@ import { adminItemsModal } from './admin-items-modal.js';
             }
         });
 
-        // Stat cards with data-nav navigate to their admin page
+        // Stat cards with data-nav navigate to their admin page (mouse and keyboard)
         document.addEventListener('click', (e) => {
             const card = e.target.closest('[data-nav]');
             if (card && card.dataset.nav) {
                 navigateTo(card.dataset.nav);
             }
+        });
+        document.querySelectorAll('[data-nav]').forEach((card) => {
+            card.tabIndex = 0;
+            card.setAttribute('role', 'link');
+            card.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                navigateTo(card.dataset.nav);
+            });
         });
 
         // Handle initial hash
@@ -2797,6 +2806,123 @@ import { adminItemsModal } from './admin-items-modal.js';
         }
     }
 
+    // =================================================================
+    // COMMAND PALETTE (Ctrl+K / Cmd+K): jump to any admin page by name
+    // =================================================================
+
+    function initCommandPalette() {
+        const normalize = (value) => String(value || '')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const entries = Object.entries(PAGE_TITLES).map(([page, meta]) => ({
+            page,
+            title: meta.title,
+            subtitle: meta.subtitle,
+            haystack: normalize(`${meta.title} ${meta.subtitle} ${page}`)
+        }));
+
+        const dialog = document.createElement('dialog');
+        dialog.className = 'admin-palette';
+        dialog.setAttribute('aria-label', 'Aller à une page');
+        dialog.innerHTML = `
+            <div class="admin-palette-search">
+                <i class="ti ti-search" aria-hidden="true"></i>
+                <input type="search" placeholder="Aller à… (utilisateurs, quêtes, logs)" aria-label="Rechercher une page" autocomplete="off">
+                <kbd>Échap</kbd>
+            </div>
+            <ul class="admin-palette-list" role="listbox"></ul>`;
+        document.body.appendChild(dialog);
+        const input = dialog.querySelector('input');
+        const list = dialog.querySelector('ul');
+        let results = entries;
+        let selected = 0;
+
+        const render = () => {
+            const query = normalize(input.value.trim());
+            results = query ? entries.filter((e) => e.haystack.includes(query)) : entries;
+            selected = Math.min(selected, Math.max(results.length - 1, 0));
+            list.innerHTML = '';
+            if (!results.length) {
+                const empty = document.createElement('li');
+                empty.className = 'admin-palette-empty';
+                empty.textContent = 'Aucune page ne correspond.';
+                list.appendChild(empty);
+                return;
+            }
+            results.forEach((entry, index) => {
+                const item = document.createElement('li');
+                item.className = 'admin-palette-item';
+                item.setAttribute('role', 'option');
+                item.setAttribute('aria-selected', String(index === selected));
+                const title = document.createElement('strong');
+                title.textContent = entry.title;
+                const subtitle = document.createElement('span');
+                subtitle.textContent = entry.subtitle;
+                item.append(title, subtitle);
+                item.addEventListener('mousemove', () => {
+                    if (selected === index) return;
+                    selected = index;
+                    render();
+                });
+                item.addEventListener('click', () => go(entry));
+                list.appendChild(item);
+            });
+            list.children[selected]?.scrollIntoView({ block: 'nearest' });
+        };
+
+        const go = (entry) => {
+            dialog.close();
+            navigateTo(entry.page);
+        };
+
+        const open = () => {
+            if (dialog.open) return;
+            input.value = '';
+            selected = 0;
+            render();
+            dialog.showModal();
+            input.focus();
+        };
+
+        input.addEventListener('input', () => {
+            selected = 0;
+            render();
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (!results.length) return;
+                selected = (selected + (e.key === 'ArrowDown' ? 1 : -1) + results.length) % results.length;
+                render();
+            } else if (e.key === 'Enter' && results[selected]) {
+                e.preventDefault();
+                go(results[selected]);
+            }
+        });
+        // Click on the backdrop closes the palette.
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) dialog.close();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                open();
+            }
+        });
+
+        // Header hint so the shortcut is discoverable.
+        const btnList = document.querySelector('.page-header .btn-list');
+        if (btnList) {
+            const hint = document.createElement('button');
+            hint.type = 'button';
+            hint.className = 'btn btn-ghost-secondary admin-palette-hint';
+            const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+            hint.innerHTML = `<i class="ti ti-search"></i><span>Rechercher</span><kbd>${isMac ? '⌘' : 'Ctrl'} K</kbd>`;
+            hint.addEventListener('click', open);
+            btnList.prepend(hint);
+        }
+    }
+
     async function init() {
         console.log('[Admin] Initializing...');
 
@@ -2809,6 +2935,7 @@ import { adminItemsModal } from './admin-items-modal.js';
 
         // Initialize navigation
         initNavigation();
+        initCommandPalette();
 
         // Load initial data
         await loadDashboardStats();

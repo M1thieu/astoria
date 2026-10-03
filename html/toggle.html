@@ -2,6 +2,8 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8">
+    <!-- Apply the saved display mode (Nuit / Doux) before the first paint. -->
+    <script>try{var t=localStorage.getItem("astoria_theme");if(t==="dark"||t==="soft")document.documentElement.dataset.theme=t}catch(e){}</script>
     <!-- Pages live in html/: resolve every relative URL from the site root. -->
     <base href="../">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

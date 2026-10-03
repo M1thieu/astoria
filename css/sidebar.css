@@ -63,7 +63,8 @@ body.sidebar-layout {
   align-items: flex-end;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 14px 2px;
+  /* Left room for the fixed burger/close button so it never sits on "Astoria". */
+  padding: 10px 14px 2px 56px;
 }
 
 .sidebar-layout .sidebar-topbar .menu-header {
@@ -164,6 +165,20 @@ body.sidebar-layout {
 .sidebar-layout .menu-link:focus-visible {
   background: rgba(216, 27, 96, 0.16);
   color: var(--sidebar-accent-dark);
+}
+
+.sidebar-layout .menu-link[aria-current="page"] {
+  background: rgba(216, 27, 96, 0.2);
+  border-color: rgba(216, 27, 96, 0.45);
+  color: var(--sidebar-accent-dark);
+  box-shadow: inset 3px 0 0 var(--sidebar-accent-dark);
+}
+
+.sidebar-layout .menu-link:focus-visible,
+.sidebar-layout .menu-open:focus-visible,
+.sidebar-layout .sidebarIconToggle:focus-visible {
+  outline: 3px solid rgba(216, 27, 96, 0.45);
+  outline-offset: 2px;
 }
 
 .sidebar-layout .menu-icon {
@@ -308,49 +323,6 @@ body.sidebar-layout {
   display: none;
 }
 
-:root[data-theme="dark"] .sidebar-layout #sidebarMenu {
-  background: rgba(18, 16, 24, 0.96);
-  border-right-color: rgba(216, 27, 96, 0.18);
-  box-shadow: 6px 0 18px rgba(0, 0, 0, 0.35);
-}
-
-:root[data-theme="dark"] .sidebar-layout .menu-header-sub {
-  color: rgba(248, 187, 208, 0.7);
-}
-
-:root[data-theme="dark"] .sidebar-layout .menu-link {
-  background: rgba(255, 255, 255, 0.06);
-  color: #f3e7ee;
-  border-color: rgba(216, 27, 96, 0.12);
-}
-
-:root[data-theme="dark"] .sidebar-layout .menu-link:hover,
-:root[data-theme="dark"] .sidebar-layout .menu-link:focus-visible {
-  background: rgba(216, 27, 96, 0.22);
-  color: #ffffff;
-}
-
-:root[data-theme="dark"] .sidebar-layout .menu-icon {
-  background: rgba(216, 27, 96, 0.28);
-  color: #ffd6e6;
-}
-
-:root[data-theme="dark"] .sidebar-layout .menu-open {
-  background: rgba(0, 0, 0, 0.2);
-  border-color: rgba(248, 187, 208, 0.35);
-  color: #ffd6e6;
-}
-
-:root[data-theme="dark"] .sidebar-layout .menu-footer .character-select-logout {
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffd6e6;
-  border-color: rgba(248, 187, 208, 0.5);
-}
-
-:root[data-theme="dark"] .sidebar-layout .menu-footer {
-  background: rgba(18, 16, 24, 0.9);
-}
-
 @media (max-width: 640px) {
   :root {
     --sidebar-width: 72vw;
@@ -383,7 +355,6 @@ body.sidebar-layout {
     left: 10px;
   }
 }
-
 
 /* Touch screens: invisible hit area filling the 38px menu row (no overlap with neighbours). */
 @media (pointer: coarse) {

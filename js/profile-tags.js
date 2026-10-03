@@ -431,7 +431,7 @@ export function initProfileTagSelector({ characterId, isAdmin = false } = {}) {
         if (!selectedIds.length) {
             const hint = document.createElement('span');
             hint.className = 'profile-tags-empty';
-            hint.textContent = canEdit ? 'Aucun tag selectionne.' : 'Selectionnez un personnage.';
+            hint.textContent = canEdit ? 'Aucun tag sélectionné.' : 'Selectionnez un personnage.';
             selected.appendChild(hint);
             return;
         }

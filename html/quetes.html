@@ -2,6 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <!-- Apply the saved display mode (Nuit / Doux) before the first paint. -->
+    <script>try{var t=localStorage.getItem("astoria_theme");if(t==="dark"||t==="soft")document.documentElement.dataset.theme=t}catch(e){}</script>
     <!-- Pages live in html/: resolve every relative URL from the site root. -->
     <base href="../">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,7 +36,7 @@
                             <img class="character-avatar-img" id="characterSummaryAvatar" alt="Avatar" hidden>
                             <div class="character-avatar-circle" id="characterSummaryInitial" hidden></div>
                         </div>
-                        <div class="character-dropdown" hidden aria-label="Selectionner un personnage"></div>
+                        <div class="character-dropdown" hidden aria-label="Sélectionner un personnage"></div>
                     </div>
                     <div class="character-summary-text">
                         <a class="character-name" id="characterSummaryName" href="html/profil.html">Nom du personnage</a>
@@ -199,7 +201,7 @@
                             <label class="quest-admin-participants-label" for="questAdminParticipantSelect">Ajout admin</label>
                             <div class="quest-admin-participants-row">
                                 <select id="questAdminParticipantSelect" class="quest-admin-participant-select">
-                                    <option value="">Selectionner un personnage...</option>
+                                    <option value="">Sélectionner un personnage...</option>
                                 </select>
                                 <button class="quest-admin-participant-add tw-press" id="questAdminParticipantAddBtn" type="button">
                                     Ajouter
@@ -240,7 +242,7 @@
                             <select id="questStatusInput">
                                 <option value="available">Disponible</option>
                                 <option value="in_progress">En cours</option>
-                                <option value="locked">Acces restreint</option>
+                                <option value="locked">Accès restreint</option>
                             </select>
                         </label>
                         <div class="quest-editor-block quest-editor-block--rewards tw-panel tw-surface">
@@ -332,7 +334,7 @@
                 <div class="quest-editor-status">
                     <button class="quest-editor-status-dot tw-press" type="button" data-status="available" aria-label="Disponible"></button>
                     <button class="quest-editor-status-dot tw-press" type="button" data-status="in_progress" aria-label="En cours"></button>
-                    <button class="quest-editor-status-dot tw-press" type="button" data-status="locked" aria-label="Acces restreint"></button>
+                    <button class="quest-editor-status-dot tw-press" type="button" data-status="locked" aria-label="Accès restreint"></button>
                 </div>
                 <button class="quest-editor-action quest-editor-action--confirm tw-press" type="submit" form="questEditorForm" aria-label="Enregistrer">&#10003;</button>
                 <button class="quest-editor-action quest-editor-action--cancel tw-press" type="button" data-close="true" aria-label="Annuler">&#10005;</button>

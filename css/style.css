@@ -3348,6 +3348,26 @@ button:hover .shortcut-icon {
         min-width: 0;
         max-width: calc(100vw - 72px) !important;
         box-sizing: border-box;
+        gap: 10px;
+        padding: 8px 12px 8px 8px;
+        text-align: left;
+    }
+
+    /* Avatar box and picture share one size, so the name is never covered. */
+    .headroom-character .character-avatar,
+    .headroom-character .character-avatar-circle,
+    .headroom-character .character-avatar-img {
+        width: 44px;
+        height: 44px;
+    }
+
+    .headroom-character .character-avatar-circle {
+        font-size: var(--text-lg);
+    }
+
+    .headroom-character .character-summary-meta {
+        justify-content: flex-start;
+        margin-top: 2px;
     }
 
     /* Keep the page title below the floating card and menu button. */
@@ -3729,4 +3749,34 @@ table[aria-busy="true"] tbody:has(.table-skeleton-row) {
 
 .table-state-retry {
     margin-left: var(--space-3);
+}
+
+/* =================================================================
+   DISPLAY MODES (js/theme-toggle.js): Nuit and Doux
+   The page keeps its own design: "Nuit" flips lightness but keeps the
+   pink/purple hues, then flips photos and pictures back so they look normal.
+   ================================================================= */
+/* contrast(0.9) lifts pure black to a deep night tone; pictures apply the
+   exact reverse chain (in reverse order) to come back to their own colors. */
+:root[data-theme="dark"] {
+    filter: invert(1) hue-rotate(180deg) contrast(0.9);
+}
+
+:root[data-theme="dark"] :is(img, video, canvas, iframe, [style*="background-image"]) {
+    filter: contrast(1.111) hue-rotate(180deg) invert(1);
+}
+
+/* Pictures inside an already flipped-back box must not flip twice. */
+:root[data-theme="dark"] [style*="background-image"] :is(img, video, canvas, iframe) {
+    filter: none;
+}
+
+:root[data-theme="soft"] {
+    filter: sepia(0.22) brightness(0.88) saturate(0.92);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    :root {
+        transition: filter 0.25s ease;
+    }
 }

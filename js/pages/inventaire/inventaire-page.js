@@ -2748,7 +2748,7 @@
 
 
 
-                    <div class="empty-state-title">Acces restreint</div>
+                    <div class="empty-state-title">Accès restreint</div>
 
 
 
@@ -6883,7 +6883,7 @@
 
                                         emptyStateMessage.textContent = currentSearchQuery
 
-                        ? 'Aucun objet pour cette recherche. Essaie un autre mot-cle ou une autre categorie.'
+                        ? 'Aucun objet pour cette recherche. Essaie un autre mot-clé ou une autre catégorie.'
 
                         : `Aucun objet dans ${activeCategoryLabel.toLowerCase()} pour le moment.`;
 

@@ -145,6 +145,13 @@
     max-width: 320px;
 }
 
+/* The HDV search box is always wide: show its field (and placeholder) right
+   away instead of an empty pill that only works after tapping the icon. */
+.hdv-filterbar .inventory-search .inventory-search-input {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 .hdv-page .search-container input {
     width: 260px;
     transition: box-shadow var(--transition-medium), border-color var(--transition-fast);

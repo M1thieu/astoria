@@ -11,6 +11,8 @@
 
 
     <meta charset="UTF-8">
+    <!-- Apply the saved display mode (Nuit / Doux) before the first paint. -->
+    <script>try{var t=localStorage.getItem("astoria_theme");if(t==="dark"||t==="soft")document.documentElement.dataset.theme=t}catch(e){}</script>
     <!-- Pages live in html/: resolve every relative URL from the site root. -->
     <base href="../">
 
@@ -782,7 +784,7 @@
                         </div>
                         <div class="stats-grid">
                             <div class="stat-box stat-box--dynamic">
-                                <h4 class="stat-box-title">Bonus equipement</h4>
+                                <h4 class="stat-box-title">Bonus équipement</h4>
                                 <div class="stats-dynamic-list" id="statsDynamicList"></div>
                             </div>
                         </div>

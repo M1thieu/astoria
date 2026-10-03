@@ -747,7 +747,7 @@ async function handleCraft(recipe) {
             } else if (reason === 'invalid_recipe_no_ingredients') {
                 message = 'Recette invalide : aucun ingredient requis.';
             } else if (reason === 'forbidden') {
-                message = 'Acces refuse.';
+                message = 'Accès refusé.';
             }
             toastError(message);
             console.warn('[Craft] craft rejected:', reason);
@@ -940,7 +940,7 @@ function renderRecipes() {
         body.className = 'craft-empty-copy';
         body.textContent = state.onlyPossible
             ? 'Retire le filtre "Creation possible" pour voir toutes les recettes, meme celles bloquees par des materiaux manquants.'
-            : 'Essaie une autre categorie, un autre rang, ou vide la recherche.';
+            : 'Essaie une autre catégorie, un autre rang, ou vide la recherche.';
 
         empty.append(title, body);
 

@@ -5,61 +5,44 @@
   cursor: pointer;
 }
 
-.theme-toggle-track {
-  width: 40px;
-  height: 22px;
-  border-radius: 999px;
-  background: rgba(216, 27, 96, 0.16);
-  border: 1px solid rgba(216, 27, 96, 0.3);
+/* Day / night / soft pill (js/theme-toggle.js fills it). */
+.theme-mode {
   display: inline-flex;
   align-items: center;
-  padding: 2px;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px 0 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 27, 96, 0.3);
+  background: rgba(255, 255, 255, 0.75);
+  color: #880e4f;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.theme-toggle-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  transform: translateX(0);
-  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+.theme-mode:hover {
+  background: #fce4ec;
+  border-color: rgba(216, 27, 96, 0.5);
+}
+
+.theme-mode:focus-visible {
+  outline: 3px solid rgba(216, 27, 96, 0.45);
+  outline-offset: 2px;
+}
+
+.theme-mode-icon {
   display: grid;
   place-items: center;
-  position: relative;
-  color: #c2185b;
-  font-size: 0.6rem;
-  line-height: 1;
-}
-
-.theme-toggle-icon {
-  position: absolute;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-:root:not([data-theme="dark"]) .theme-toggle-sun {
-  opacity: 1;
-}
-
-:root[data-theme="dark"] .theme-toggle-moon {
-  opacity: 1;
-}
-
-:root[data-theme="dark"] .theme-toggle-track {
-  background: rgba(18, 16, 24, 0.85);
-  border-color: rgba(248, 187, 208, 0.5);
-}
-
-:root[data-theme="dark"] .theme-toggle-thumb {
-  transform: translateX(18px);
-  background: #f8bbd0;
-  color: #4a2335;
-}
-
-.theme-toggle:focus-visible .theme-toggle-track {
-  box-shadow: 0 0 0 3px rgba(216, 27, 96, 0.2);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #d81b60;
+  color: #fff;
+  font-size: 0.75rem;
 }
 
 .theme-toggle-demo {

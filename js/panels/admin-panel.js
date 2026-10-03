@@ -116,7 +116,7 @@ export const adminPanel = {
     accountLabel.textContent = "Compte joueur";
     accountLabel.setAttribute("for", "adminAccountStatus");
 
-    const accountStatus = el("div", "panel-admin-status", "Aucun compte selectionne.");
+    const accountStatus = el("div", "panel-admin-status", "Aucun compte sélectionné.");
     accountStatus.id = "adminAccountStatus";
 
     const accountToggle = document.createElement("button");
@@ -283,7 +283,7 @@ export const adminPanel = {
         kaelsSave.disabled = true;
         kaelsDeltaInput.disabled = true;
         kaelsDeltaSave.disabled = true;
-        accountStatus.textContent = "Aucun compte selectionne.";
+        accountStatus.textContent = "Aucun compte sélectionné.";
         accountToggle.disabled = true;
         characterToggle.disabled = true;
         activeUser = null;

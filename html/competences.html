@@ -2,6 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <!-- Apply the saved display mode (Nuit / Doux) before the first paint. -->
+    <script>try{var t=localStorage.getItem("astoria_theme");if(t==="dark"||t==="soft")document.documentElement.dataset.theme=t}catch(e){}</script>
     <!-- Pages live in html/: resolve every relative URL from the site root. -->
     <base href="../">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1145,6 +1147,14 @@
             }
             .skills-page-hint--right {
                 right: var(--space-3);
+            }
+        }
+        @media (max-width: 767px) {
+            /* Clear the fixed menu button (top-left) instead of sitting under it. */
+            .skills-title {
+                padding-left: 48px;
+                font-size: var(--text-2xl);
+                line-height: 1.2;
             }
         }
         @media (max-width: 480px) {

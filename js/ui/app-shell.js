@@ -128,13 +128,13 @@ async function run() {
   soulProg.append(soulProgLabel, soulProgValue);
   souls.append(soulConso, soulProg);
 
-  const logoutBtn = el("button", "auth-button secondary", "Deconnexion");
+  const logoutBtn = el("button", "auth-button secondary", "Déconnexion");
   logoutBtn.type = "button";
 
   let adminSelect = null;
   if (adminMode) {
     adminSelect = el("select", "character-selector character-selector--admin");
-    adminSelect.setAttribute("aria-label", "MJ : selectionner un personnage");
+    adminSelect.setAttribute("aria-label", "MJ : sélectionner un personnage");
     const adminPlaceholder = document.createElement("option");
     adminPlaceholder.value = "";
     adminPlaceholder.textContent = "MJ: choisir un personnage...";
