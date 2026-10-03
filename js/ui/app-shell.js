@@ -128,7 +128,7 @@ async function run() {
   soulProg.append(soulProgLabel, soulProgValue);
   souls.append(soulConso, soulProg);
 
-  const logoutBtn = el("button", "auth-button secondary", "Deconnexion");
+  const logoutBtn = el("button", "auth-button secondary", "Déconnexion");
   logoutBtn.type = "button";
 
   let adminSelect = null;

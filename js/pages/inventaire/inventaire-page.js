@@ -2748,7 +2748,7 @@
 
 
 
-                    <div class="empty-state-title">Acces restreint</div>
+                    <div class="empty-state-title">Accès restreint</div>
 
 
 

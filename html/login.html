@@ -511,7 +511,7 @@
                 resetForm.style.display = 'block';
                 if (window.astoriaAuthUI?.hideError) window.astoriaAuthUI.hideError();
                 const subtitle = document.getElementById('authSubtitle');
-                if (subtitle) subtitle.textContent = 'Reinitialiser le mot de passe';
+                if (subtitle) subtitle.textContent = 'Réinitialiser le mot de passe';
             });
         }
         if (backToLoginLink && resetForm) {
@@ -540,7 +540,7 @@
                     return;
                 }
                 resetButton.disabled = true;
-                resetButton.textContent = 'Reinitialisation...';
+                resetButton.textContent = 'Réinitialisation...';
                 try {
                     const result = await resetUserPasswordPublic(username, password);
                     if (result.success) {
@@ -552,14 +552,14 @@
                         }
                         showNotice('Mot de passe mis a jour. Connectez-vous.');
                     } else {
-                        showError(result.error || 'Impossible de reinitialiser le mot de passe');
+                        showError(result.error || 'Impossible de réinitialiser le mot de passe');
                     }
                 } catch (err) {
                     console.error(err);
-                    showError('Erreur de reinitialisation. Veuillez reessayer.');
+                    showError('Erreur de réinitialisation. Veuillez réessayer.');
                 } finally {
                     resetButton.disabled = false;
-                    resetButton.textContent = 'Reinitialiser le mot de passe';
+                    resetButton.textContent = 'Réinitialiser le mot de passe';
                 }
             });
         }

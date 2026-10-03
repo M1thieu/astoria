@@ -28,7 +28,7 @@ const QUEST_RANKS = ["F", "E", "D", "C", "B", "A", "S", "S+", "SS", "SSS"];
 const STATUS_META = {
     available: { label: "Disponible", color: "#6aa7ff" },
     in_progress: { label: "En cours", color: "#ff9c4a" },
-    locked: { label: "Acces restreint", color: "#ff6b6b" }
+    locked: { label: "Accès restreint", color: "#ff6b6b" }
 };
 
 const QUEST_STORAGE_KEY = "astoria_quests_state";
@@ -2694,7 +2694,7 @@ function buildJoinNote(quest) {
         return "Qu\u00EAte d\u00E9j\u00E0 r\u00E9alis\u00E9e (non r\u00E9p\u00E9titive).";
     }
     if (quest.status === "locked") {
-        return "Acces restreint par le staff.";
+        return "Accès restreint par le staff.";
     }
     if (quest.status === "in_progress" && !isParticipant(quest)) {
         return "Qu\u00EAte en cours.";

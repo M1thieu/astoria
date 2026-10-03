@@ -330,7 +330,7 @@ export const magiePanel = buildStubPanel({
   title: "Magie",
   fullPageHref: getRouteHref("magic"),
   fullPageLabel: "Ouvrir la magie",
-  blurb: "Panel en preparation. Acces rapide aux notes et validations.",
+  blurb: "Panel en préparation. Accès rapide aux notes et validations.",
   load: async (summary, ctx) => {
     const character = ctx?.character || null;
     if (!character?.id) {

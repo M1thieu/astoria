@@ -747,7 +747,7 @@ async function handleCraft(recipe) {
             } else if (reason === 'invalid_recipe_no_ingredients') {
                 message = 'Recette invalide : aucun ingredient requis.';
             } else if (reason === 'forbidden') {
-                message = 'Acces refuse.';
+                message = 'Accès refusé.';
             }
             toastError(message);
             console.warn('[Craft] craft rejected:', reason);

@@ -361,7 +361,7 @@ export async function refreshSessionUser() {
 
 export async function setUserRoleByUsername(username, role) {
     if (!isAdmin()) {
-        return { success: false, error: "Acces non autorise" };
+        return { success: false, error: "Accès non autorisé" };
     }
 
     const cleanUsername = normalizeUsername(username);
@@ -399,7 +399,7 @@ export async function setUserRoleByUsername(username, role) {
 
 export async function resetUserPassword(username, newPassword) {
     if (!isAdmin()) {
-        return { success: false, error: "Acces non autorise" };
+        return { success: false, error: "Accès non autorisé" };
     }
 
     const cleanUsername = normalizeUsername(username);
@@ -425,13 +425,13 @@ export async function resetUserPassword(username, newPassword) {
 
         if (update.error) {
             console.error("Error resetting password:", update.error);
-            return { success: false, error: "Impossible de reinitialiser le mot de passe" };
+            return { success: false, error: "Impossible de réinitialiser le mot de passe" };
         }
 
         return { success: true, user: update.data };
     } catch (error) {
         console.error("Error in resetUserPassword:", error);
-        return { success: false, error: "Impossible de reinitialiser le mot de passe" };
+        return { success: false, error: "Impossible de réinitialiser le mot de passe" };
     }
 }
 
@@ -480,13 +480,13 @@ export async function resetUserPasswordPublic(username, newPassword) {
 
         if (update.error) {
             console.error("Error resetting password (public):", update.error);
-            return { success: false, error: "Impossible de reinitialiser le mot de passe" };
+            return { success: false, error: "Impossible de réinitialiser le mot de passe" };
         }
 
         return { success: true, mode: "legacy-hash", user: update.data };
     } catch (error) {
         console.error("Error in resetUserPasswordPublic:", error);
-        return { success: false, error: "Impossible de reinitialiser le mot de passe" };
+        return { success: false, error: "Impossible de réinitialiser le mot de passe" };
     }
 }
 
