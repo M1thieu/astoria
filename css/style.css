@@ -3348,6 +3348,26 @@ button:hover .shortcut-icon {
         min-width: 0;
         max-width: calc(100vw - 72px) !important;
         box-sizing: border-box;
+        gap: 10px;
+        padding: 8px 12px 8px 8px;
+        text-align: left;
+    }
+
+    /* Avatar box and picture share one size, so the name is never covered. */
+    .headroom-character .character-avatar,
+    .headroom-character .character-avatar-circle,
+    .headroom-character .character-avatar-img {
+        width: 44px;
+        height: 44px;
+    }
+
+    .headroom-character .character-avatar-circle {
+        font-size: var(--text-lg);
+    }
+
+    .headroom-character .character-summary-meta {
+        justify-content: flex-start;
+        margin-top: 2px;
     }
 
     /* Keep the page title below the floating card and menu button. */
