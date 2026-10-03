@@ -180,7 +180,7 @@
             sortStatEntries(entries);
 
             if (!entries.length) {
-                dynamicContainer.innerHTML = '<div class="stats-dynamic-empty">Aucun bonus d\'equipement actif.</div>';
+                dynamicContainer.innerHTML = '<div class="stats-dynamic-empty">Aucun bonus d\'équipement actif.</div>';
             } else {
                 dynamicContainer.innerHTML = entries
                     .map((entry) => `

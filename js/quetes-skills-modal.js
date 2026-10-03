@@ -53,7 +53,7 @@ export function initSkillsRewardsModal(questesModule) {
     function updateSelectedCount() {
         const selectedCount = state.selected.size;
         if (dom.selectedCount) {
-            dom.selectedCount.textContent = `${selectedCount} categorie(s) selectionnee(s)`;
+            dom.selectedCount.textContent = `${selectedCount} catégorie(s) sélectionnée(s)`;
         }
         if (dom.confirm) {
             dom.confirm.disabled = selectedCount === 0;

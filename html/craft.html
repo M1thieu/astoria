@@ -7,7 +7,7 @@
     <!-- Pages live in html/: resolve every relative URL from the site root. -->
     <base href="../">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Systeme de craft - Astoria</title>
+    <title>Système de craft - Astoria</title>
     <link rel="icon" type="image/x-icon" href="assets/images/ALICE_ACADEMIA.ico">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/craft.css">
@@ -19,8 +19,8 @@
             <a href="html/inventaire.html" class="page-back" title="Retour a l'inventaire">&larr; Retour</a>
             <div class="page-header-main">
                 <div class="page-title-block">
-                    <h1 class="page-title" id="craftPageTitle">Systeme de craft</h1>
-                    <p class="craft-subtitle">Recettes, materiaux et fabrication.</p>
+                    <h1 class="page-title" id="craftPageTitle">Système de craft</h1>
+                    <p class="craft-subtitle">Recettes, matériaux et fabrication.</p>
                 </div>
                 <div class="character-summary" aria-label="Resume du personnage">
                     <div class="character-avatar-wrapper">
@@ -28,7 +28,7 @@
                             <img class="character-avatar-img" id="characterSummaryAvatar" alt="Avatar" hidden>
                             <div class="character-avatar-circle" id="characterSummaryInitial" hidden></div>
                         </div>
-                        <div class="character-dropdown" hidden aria-label="Selectionner un personnage"></div>
+                        <div class="character-dropdown" hidden aria-label="Sélectionner un personnage"></div>
                     </div>
                     <div class="character-summary-text">
                         <a class="character-name" id="characterSummaryName" href="html/profil.html">Nom du personnage</a>
@@ -61,12 +61,12 @@
                     <option value="exact">Rang exact</option>
                     <option value="min">Rang min (et +)</option>
                 </select>
-                <select id="craftSlotFilter" class="tw-input craft-select" aria-label="Filtrer par type d'equipement">
+                <select id="craftSlotFilter" class="tw-input craft-select" aria-label="Filtrer par type d'équipement">
                     <option value="Tous">Tous les types</option>
                 </select>
                 <label class="craft-toggle">
                     <input id="craftPossibleOnly" type="checkbox">
-                    <span>Creation possible</span>
+                    <span>Création possible</span>
                 </label>
             </div>
             <div class="craft-toolbar-right">
@@ -83,11 +83,11 @@
             <div id="craftAdminStatsCards" class="craft-admin-stats-cards"></div>
             <div class="craft-admin-stats-split">
                 <div class="craft-admin-stats-block">
-                    <h3>Par categorie</h3>
+                    <h3>Par catégorie</h3>
                     <div id="craftAdminStatsCategory" class="craft-admin-chip-list"></div>
                 </div>
                 <div class="craft-admin-stats-block">
-                    <h3>Par rarete</h3>
+                    <h3>Par rareté</h3>
                     <div id="craftAdminStatsRarity" class="craft-admin-chip-list"></div>
                 </div>
                 <div class="craft-admin-stats-block">
@@ -112,7 +112,7 @@
                 <label class="craft-form-field">
                     <span>Personnage cible</span>
                     <select id="craftAdminCharacterSelect" class="tw-input">
-                        <option value="">Selectionner un personnage...</option>
+                        <option value="">Sélectionner un personnage...</option>
                     </select>
                 </label>
                 <button id="craftAdminRefreshBtn" type="button" class="craft-secondary-btn">Rafraichir</button>
@@ -135,7 +135,7 @@
                         <thead>
                             <tr>
                                 <th>Item</th>
-                                <th>Categorie</th>
+                                <th>Catégorie</th>
                                 <th>Quantite</th>
                                 <th>ID</th>
                             </tr>
@@ -152,7 +152,7 @@
 
         <section class="craft-layout" aria-label="Espace recette">
             <aside class="craft-sidebar tw-panel" aria-label="Categories recettes">
-                <h2 class="craft-sidebar-title">Categories</h2>
+                <h2 class="craft-sidebar-title">Catégories</h2>
                 <div class="craft-category-list" id="craftCategoryList">
                     <button type="button" class="craft-category-btn is-active" data-category="Tous">Tous</button>
                     <button type="button" class="craft-category-btn" data-category="Alchimie">Alchimie</button>
@@ -173,13 +173,13 @@
         <div class="craft-modal-backdrop" data-craft-modal-close></div>
         <div class="modal-inner craft-modal-card" role="dialog" aria-modal="true" aria-labelledby="craftModalTitle">
             <header class="craft-modal-header">
-                <h2 id="craftModalTitle">Creer une recette</h2>
+                <h2 id="craftModalTitle">Créer une recette</h2>
                 <button id="craftModalClose" type="button" class="craft-modal-close" aria-label="Fermer">x</button>
             </header>
             <div class="craft-modal-body">
                 <div class="craft-form-grid">
                     <label class="craft-form-field">
-                        <span>Categorie</span>
+                        <span>Catégorie</span>
                         <select id="craftRecipeCategory" class="tw-input">
                             <option value="Alchimie">Alchimie</option>
                             <option value="Forge">Forge</option>
@@ -187,7 +187,7 @@
                         </select>
                     </label>
                     <label class="craft-form-field">
-                        <span>Rarete</span>
+                        <span>Rareté</span>
                         <select id="craftRecipeRarity" class="tw-input">
                             <option value="Commun">Commun</option>
                             <option value="Rare">Rare</option>
@@ -216,7 +216,7 @@
                 <div class="craft-form-grid craft-form-grid--output">
                     <label class="craft-form-field craft-form-field--wide">
                         <span>Item obtenu</span>
-                        <input id="craftRecipeOutputItemLabel" class="tw-input" type="text" placeholder="Selectionner un item..." readonly>
+                        <input id="craftRecipeOutputItemLabel" class="tw-input" type="text" placeholder="Sélectionner un item..." readonly>
                         <input id="craftRecipeOutputItem" type="hidden" value="">
                     </label>
                     <button id="craftPickOutputBtn" type="button" class="craft-secondary-btn">Choisir item</button>
@@ -244,13 +244,13 @@
         <div class="craft-modal-backdrop" data-craft-picker-close></div>
         <div class="modal-inner craft-modal-card craft-picker-card" role="dialog" aria-modal="true" aria-labelledby="craftItemPickerTitle">
             <header class="craft-modal-header">
-                <h2 id="craftItemPickerTitle">Selectionner un item</h2>
+                <h2 id="craftItemPickerTitle">Sélectionner un item</h2>
                 <button id="craftItemPickerClose" type="button" class="craft-modal-close" aria-label="Fermer">x</button>
             </header>
             <div class="craft-modal-body">
                 <div class="craft-picker-toolbar">
                     <input id="craftItemPickerSearch" class="tw-input" type="search" placeholder="Rechercher un item...">
-                    <select id="craftItemPickerSlotFilter" class="tw-input" aria-label="Filtrer les items par type d'equipement">
+                    <select id="craftItemPickerSlotFilter" class="tw-input" aria-label="Filtrer les items par type d'équipement">
                         <option value="">Tous les types</option>
                     </select>
                 </div>

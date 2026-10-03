@@ -1025,7 +1025,7 @@
                 persistState.readOnlyFallback = true;
                 persistState.readOnlyReason = characterSource === "forbidden"
                     ? "Le personnage actif detecte ne correspond pas a cette session. Rechargez la selection de personnage."
-                    : "Impossible de determiner le personnage actif. Rechargez la page ou re-selectionnez votre personnage avant de modifier les competences.";
+                    : "Impossible de déterminer le personnage actif. Rechargez la page ou resélectionnez votre personnage avant de modifier les compétences.";
             }
         } catch (error) {
             // Keep local mode fallback.
